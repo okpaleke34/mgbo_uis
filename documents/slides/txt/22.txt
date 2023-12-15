@@ -1,0 +1,192 @@
+Chapter 22 BeyondPhysical Memory: Policies Memory pressure — when little free memory
+-Forces the OS to start paging out pages
+-Make room for actively-used pages
+-Deciding which pages to evict: replacement policy 22.1 Cache Management We can view main memory (PM) as a cache for VM pages in the system
+Goal of replacement policy: minimize cache misses
+-That is, minimize number of times we fetch a page from disk 
+-Or: vice versa: maximize cache hits 
+Knowing cache hits and misses let us calculate:
+Average memory access time (AMAT):
+	 AMAT 	= TM + (Pmiss * TD)
+	TM 	 = cost of accessing memory
+	TD 	 = cost of accessing disk
+	Pmiss 	 = probability of not ﬁnding the data in cache
+Note: always pay cost of accessing data in memory (TM).
+Example. Assume TM = 100 ns, TD = 10 ms, Pmiss = 10% = 0.1
+	 AMAT = 100 ns + (0.1 * 10 ms) = 100 ns + 1 ms  = 1.0001 ms ≈ 1 ms
+Example. If the hit rate 99.9 %: Pmiss = 0.001
+	 AMAT = 100 ns + 0.001*10 ms = 100 ns + 0.01 ms = 10.1 microseconds
+100x faster: with near 100 % hit rate: AMAT approaches 100 ns22.2 The Optimal Replacement Policy Optimal policy: MIN - fewest misses overall
+-Replace the page that will be accessed furthest in the future
+-Not possible to implement — can’t predict the future
+-Still useful to know what the optimal would for a set of cases
+-Can compare your new replacement policy algorithm with the optimal for certain workloads
+Example. Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1
+Cold start: 
+-Filling the cache — ﬁrst three misses
+Q: Which page to replace/evict to load page 3?
+- 0 used immediately after
+- 3 used again
+-1 used next 
+-2 used next (2 must be evicted since there is no room for it,and it is used furthest into the future)
+Q: Which page to evict to load page 2?
+- 1 used immediately 
+-No more pages used: so can evict page 3 or 0. We chose 3 in this example.
+Hit rate for the cache:
+	 Hit rate = Hits / (Hits+Misses)
+Example. 6 hits, 5 misses:
+	 Hit rate = 6 / (6+5)  = 6/11 = 54.5 %
+Hit rate modulo compulsory misses:
+	 Hit rate = Hits / (Hits+Misses-#Pages)
+Example. There are 4 pages in total. Ignore four misses due to ﬁrst load of each page:
+	 Hit rate = 6 / (6+5-4) = 6/7  = 85.7 %
+22.3 Simple Policy: FIFO -Pages placed in a queue when entering the system
+-Replacement: 
+-Evict page on the tail of the queue (the ﬁrst-in page)
+Which page to evict to load page 3?
+-Easy: page 0 since it was loaded ﬁrst
+Which page to evict for page 0?
+-Easy: page 1 since it was loaded after page 0
+Compare FIFO to optimal policy (MIN):
+	 Hit rate = 4/(4+7) = 4/11 = 36.4 %	 	 	 	 	 	 (54.5 % for MIN)
+	 Hit rate excluding compulsory misses = 4/(4+7-4) = 4/7 = 57.1 %	 	 (85.7 % for MIN)
+
+Aside: Belady’s Anomaly In general: expect cache hit rate to increase (get better) when caches gets larger.
+Example. Memory-reference stream: 1, 2, 3, 4, 1, 2, 5, 1, 3, 4, 5.
+With 3 pages:
+	 Hit rate = 3 / (3+9) = 25 %
+With 4 pages:
+	 Hit rate = 2 / (2+10) = 16.7 %
+FIFO may sometimes get worst with larger cache sizes.Cache Size = 3Cache Size = 4AccessHit/Miss?EvictCache StateAccessHit/Miss?EvictCache State1Miss11Miss12Miss1,22Miss1,23Miss1,2,33Miss1,2,34Miss12,3,44Miss1,2,3,41Miss23,4,11Hit1,2,3,42Miss34,1,22Hit1,2,3,45Miss41,2,55Miss12,3,4,51Hit1,2,51Miss23,4,5,12Hit1,2,52Miss34,5,1,23Miss12,5,33Miss45,1,2,34Miss25,3,44Miss51,2,3,45Hit5,3,45Miss12,3,4,522.5 Using History: LRU Use history as guide:
+-If page access in near past — likely to be accessed again in near future
+-Historical info 
+-Frequency — page access many times (page must have “value”; let’s keep it in cache) 
+-Recency — page was recently accessed
+Family of policies: rely on principle of locality
+-Programs tend to access code/data in sequence, e.g., in a loop  
+-Keep those pages in memory instead of evicting them
+-Heuristic: often very good, but may exhibit random accessthat limit the use of the locality principle!
+Least-Frequently-Used (LFU)
+-Replaces least-frequently used page
+Least-Recently-Used (LRU)
+-Replaces least-recently used page
+Example. LRU Fig 22.5
+	 Hit rate = 6/(6+5) = 6/11 = 54.5 %	 	 (same as MIN)
+22.6 Workload Examples In practice: need to study more complex workloads.
+-ideally: application traces
+Example. Workload without locality -Each reference is a random page (within the set of accessed pages)
+-Workload accessed 100 unique pages
+-10,000 pages accessed overall
+-Varied the cache size: 1 page - 100 pages
+Fig 22.6 shows:
+-When no locality in workload
+- Doesn’t matter much which policy you use
+-All perform the same 
+- When cache is large enough to ﬁt entire workload 
+- Doesn’t matter which policy is used
+- All policies converge to 100 % hit rate
+- Optimal performs much better than any realistic policies 
+-Peeking into the future does a much better job of replacement
+Example. 80-20 Workload
+-Again: 100 unique pages
+-Exhibit locality: 
+- 80 % of references are made to 20 % of the pages (hot pages)
+-Remaining 20 % of references are made to 80 % of the pages (cold pages)
+Fig 22.7 shows:
+-FIFO and random does reasonably well
+- LRU does better: more likely to hold on to hot pages
+- Optimal is quite a bit better than LRU
+- Showing that LRU’s historical info is not perfect!
+
+Example. Looping Sequential Workload
+-50 unique pages in the hot loop 
+-Refer to 50 pages in sequence: 0, 1, 2, … 49 and 
+-Then loop for 10,000 accesses
+-Common in many applications (e.g. databases)
+- Worst-case for LRU and FIFO
+- Kick out older pages
+-But due to the looping nature of the program
+-Those are the “older” pages that will soon be accessed again 
+- Cache size of 49 — with 50 pages in a looping workload:
+-Hit rate of 0 %
+- Random much better for this case, but not as good as optimal
+- Random doesn’t have corner cases
+
+22.7 Implementing Historical Algorithms (FIFO and random are easy to implement)
+Challenge: How do we implement LRU?
+To implement LRU perfectly / accurately:
+- On each page access (instruction fetch or data load/store)
+- Update data structure to move “page” to front of the list
+- Accounting work on every memory reference
+- Great care must be taken: such accounting can greatly reduce performance 
+Could we do this in HW?
+- On each access, update a time ﬁeld in PTE
+- When replacing page, OS scan all time ﬁelds to ﬁnd least-recently-used page
+Prohibitively expensive to scan a large table to ﬁnd the LRU page.
+ 
+22.8 Approximate LRU HW support: use bit (reference bit) in the PTE
+-When page referenced (read or write)
+-HW set use bit to 1.
+-OS is responsible for clearing the use bit to 0. 
+Clock Algorithm:
+-Arrange all pages in a circular list 
+-A “clock hand” points to some page P 
+-When a replacement must occur
+-CheckUseBit:
+-OS checks if P’s use bit is 0 or 1.
+-If use bit == 1: implies that P was recently used
+-(Not a good candidate for replacement)
+-Clear P’s use bit.
+-Advance clock hand to P+1.
+-GOTO CheckUseBit
+-If use bit == 0: implies that P has not recently been used(or we have searched all pages, and all are used)
+-Replace page P.
+Fig shows that the clock algorithm performs quite well compared to perfect LRU
+
+22.9 Considering Dirty Pages
+-If page has been modiﬁed (dirty)
+-Must be written to disk when being evicted (expensive)
+-Else (page is clean)
+-Eviction is free (no need for expensive IO)
+The VM system prefer to evict clean pages over dirty pages
+HW has dirty bit (or modiﬁed bit) in TLB and PT.
+Modiﬁed Clock Algorithm:
+-Scan for pages that are both unused and clean (to evict ﬁrst)
+-Failing to ﬁnd any such pages
+-Evict unused pages that are dirty (taking the cost of IO)
+22.10 Other VM Policies
+Page selection policy: 
+OS must decide when to bring page into memory.
+Two approaches: 
+-Demand paging: 
+-OS brings in a page when it is accessed (on demand)
+-This means that if the page is not present in PM, we will take a page fault and load the page from SS.
+-Prefetching: 
+-If OS already fetching page P, it may be likely that page P+1 will be needed next.
+-Should only be done if there is a reasonable chance of success…
+Policies for writing pages out to disk:
+-One-at-a-time: 
+-Does what you expect, write one page from PM to disk at a time
+-Grouping:  -Grouping multiple writes into one is more eﬀective because of the nature of disk drives (also called batching or clustering)
+22.11 Thrashing Q: What should OS do when memory is oversubscribed?
+Def. Oversubscribed (for the memory case)the memory demands of the set of running processes exceeds the available PM.
+System will constantly be paging: condition is called thrashing
+Def. Working set: set of pages a process is actively using
+Admission control: 
+-Reduce the set of processes that gets to run
+-Hope the remaining processes’s working set ﬁt in memory 
+Linux approach to memory overload:
+Out-of-memory (OOM) killer:
+-Daemon chooses a memory-intensive process and kills it!
+-Problem:
+-If daemon kills the X server — the program that renders stuﬀ on the screen…
+22.12 Summary Modern page replacement algorithms:
+-Try to support LRU approximations (like clock algorithm)
+-Scan-resistant: 
+-Avoid worst-case behavior of LRU, e.g., for the looping-sequential workload
+Importance of page replacement algorithms has decreased
+-Discrepancy between memory-access and disk-access times has increased
+-Cost of frequent paging: prohibitive
+Best solution: buy more memory!

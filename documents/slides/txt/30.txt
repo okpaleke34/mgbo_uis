@@ -1,0 +1,124 @@
+Chapter 30 Condition Variables Locks are not always enough 
+Sometimes a thread may wish to
+-Check whether a condition is true before continuing its execution
+-Ex: parent thread wants to wait for a child thread before continuing
+-(Without spinning as in the case of a lock)
+Def. Condition Variable:  an explicit queue that threads can put themselves on whensome condition is not satisﬁed, to wait for that condition to become true. Another threadcan change said condition, and then signal (to wake up one or more) waiting threads allowing them to continue. Go doc: sync.Cond implements a condition variable, a rendezvous point for goroutines waiting for orannouncing the occurrence of an event. Go doc:  sync.Cond implements a condition variable, a rendezvous point for goroutines waiting for orannouncing the occurrence of an event.
+func NewCond(mutex Locker) *Condfunc (*Cond) Wait()func (*Cond) Signal()
+Wait():
+-Wait() assumes that the associated mutex is locked when Wait() is called
+-Wait() will atomically:
+-Release the mutex lock, then
+-Put calling goroutine to sleep
+-When goroutine wakes up after being signaled by some other goroutine
+-Must re-acquire mutex lock before resuming after the line of Wait()
+Signal(): Always hold the lock when callingRule: Hold the lock when calling Signal() and Wait(). Example: Implement thread_join using a Condition Variable
+Recall C examples 
+-Chapter 5: Wait for child process to ﬁnish
+-Chapter 26: Thread_join to wait for a thread to ﬁnish
+Two cases:
+1.Parent creates child
+1.Call thread_join()
+1.Get lock
+2.Check condition
+3.Wait for child; parent is put to sleep
+2.Child runs
+1.Print child
+2.Get locks
+3.Set done = 1
+4.Signal to parent (waking it up)
+5.Unlock
+2.Parent creates child; child runs immediately
+1.Call child
+2.Get Lock
+3.Set done = 1
+4.Signal to wake sleeping threads (waiting on condition variable); but there is none
+5.Return from the child()
+6.Parent calls thread_join()
+7.See that done = 1; (in the for loop) — child has already ﬁnished
+8.Does not wait; returns after unlock30.2 The Producer/Consumer Problem (Bounded Buﬀer) Imagine:
+-One or more producer threads
+-Producers generate data items
+-Places them in a buﬀer
+-One or more consumer threads
+-Consumers grab items from the buﬀer
+-Consume them in some way
+Example Web server
+-Producer
+-Puts HTTP requests into work queue
+-Consumer 
+-Threads / workers that take requests out of the queue and process them
+Example: grep foo ﬁle.txt | wc -l
+-Two processes run concurrently 
+-Recall: the diﬀerence between concurrency and parallelism
+-Connected over a Unix pipe (the | symbol, the unix pipe system call)
+-grep is the producer
+-wc is the consumer
+First attempt: Implement using only a single int as buﬀer.
+This buﬀer is shared between a producer and a consumer
+-Use get() and put() functions
+-Count = 1 (mean buﬀer is full)
+-Count = 0 (mean buﬀer is empty)
+Conditions:
+-Only put data into buﬀer when count == 0 (buﬀer is empty)
+-Only get data from the buﬀer when count == 1 (buﬀer is full)
+A Broken Solution (*) Single producer and single consumer
+-First step:
+- Add lock around critical sections (in producer and consumer)
+- Not enough ; we need to add
+- Condition variables
+- Second step:
+- Add a single condition variable:
+- cv and associated mutex lock
+- This works for single P and single C
+- When P wants to ﬁll buﬀer: waits for it become empty: lines p1-p3
+- When C wants empty the buﬀer: waits for it to become full: lines c1-c3
+-(These are diﬀerent conditions)
+What happens if we add another consumer?
+Explaining the steps in table on next page:
+-Turns out that Tc2 gets scheduled before Tc1 even though Tc1 was waiting to consume item
+-Causes Tc1 to panic because the condition is no longer what is expected after the call to wait.Tc1StateTc2StateTpStateCountCommentc1RunningReady Ready 0c2RunningReady Ready 0c3SleepReadyReady 0Nothing to getSleepReadyp1Running0SleepReadyp2Running0SleepReadyp4Running1Buﬀer now fullReadyReadyP5Running1Tc1 wokenReadyReadyp6Running1ReadyReadyp1Running1ReadyReadyp2Running1ReadyReadyp3Sleep1Buﬀer full; sleepReadyc1RunningSleep1Tc2 sneaks in…Readyc2RunningSleep1Readyc4RunningSleep0… and grabs dataReadyc5RunningReady0Tp awokenReadyc6RunningReady0c4RunningReadyReady0Oh no! No data to read!What we saw: if we add more than one consumer, things break…
+Problem illustrated in table above:
+-After Tp woke Tc1 but before Tc1 ran,
+-The state of the bounded buﬀer changed
+-Due to Tc2
+This interpretation of what a signal means is referred to as:
+Mesa Semantics -Signaling a thread only wakes it up
+-Only a hint that the state has changed
+-No guarantee that when woken thread runs, the state will be as desired
+Hoare Semantics -Stronger guarantees; the woken thread will run immediately
+-More diﬃcult to implement this semantics
+-But we can use if-condition
+-All systems: use Mesa semantics
+Always re-check condition when woken up (Mesa semantics)
+-Always use while loop 
+-or in Go a for loop
+-for condition { Wait }
+Problem is that we only have one condition variable 
+-Shared between consumer and producer
+Q: How to ﬁx this?
+-Signaling must be more directed:
+-A consumer should not wake other consumers, only producers.
+-And vice-versa!
+The Single Buﬀer Producer/Consumer Solution Fig 30.12 (see also Go code) shows the solution
+-P waits on condition empty, and signals ﬁll.
+-C waits on ﬁll and signal empty.
+A Consumer can never accidentally wake a Consumer
+A Producer can never accidentally wake a Producer
+The Correct Producer/Consumer Solution with Real Buﬀer Add buﬀer slots
+-Allow multiple values to be “produced” before sleeping
+-Similarly, multiple values can be “consumed” before sleeping
+More eﬃcient
+-Reduces context switches
+-Allows concurrent producing/consuming
+Signaling logic in Fig 30.14
+-P only sleep if all buﬀer slots are ﬁlled (p2)
+-C only sleep if all buﬀer slots are empty (c2)
+-Summary -We have introduced condition variables
+-Wait()
+-Signal() 
+-Signal to waiting goroutines that the condition may have changed
+-Important: waiting goroutine must check condition before resuming: for/while loop
+-Broadcast()
+-Works similar to signal
+-But wakes up all waiting goroutines

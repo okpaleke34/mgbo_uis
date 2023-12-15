@@ -1,0 +1,501 @@
+ DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+1/31Front side
+Emnekode: DAT320
+ 
+Emnenavn: Operativsystemer og systemprogrammering
+ 
+År og semester: 2022 Høst - konte
+ 
+Eksamensdato: 09.03.2023
+ 
+Klokkeslett: 09:00-13:00
+ 
+Tillate hjelpemidler: Kalkulator
+ 
+ 
+Faglærer: Robert Ewald - 51875111 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+2/311return-from-trap
+Which statement about return-from-trap is true?
+Select one alternative:
+ Updates the trap table
+starts a system call
+Allocates memory
+Changes the CPU mode
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+3/312Process list
+Which shell command is used to list the processes?
+Select one alternative:
+ ps
+proclist
+lsproc
+list-processes
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+4/313Address translation
+Which device is responsible for address translation?
+Select one alternative:
+ Translation Look-aside Buffer
+Address Bus
+Virtual Frame Translator
+Memory Management Unit
+Page Table Converter
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+5/314exec()
+Which statements about the exec() (specifically execvp()) call are true and false?
+ 
+Please match the values:
+True False
+execvp() loads a program from disk.
+execvp() is used to create a child process
+execvp() changes the current process.
+ 
+Maximum marks: 3 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+6/315Process
+Which statements are true or false about the Process Abstraction.
+Please match the values:
+True False
+A process can access the memory of another process
+A process has a state.
+A process has a list of file descriptors.
+A process is a virtualization of the disk.
+A process has an identifier
+ 
+Maximum marks: 5 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+7/316Parent child
+Which output(s) of the program is/are possible? To get points all answers must be correct.
+Select one or more alternatives:
+ Alternative 4
+Alternative 1
+Alternative 2
+Alternative 3
+Maximum marks: 2 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+8/317Parent Child 2
+Which output(s) of the program is/are possible? To get points all answers must be correct.
+Select one or more alternatives:
+ Alternative 1
+Alternative 3
+Alternative 4
+Alternative 2
+Maximum marks: 2 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+9/318Memory virtualization
+Virtualization of the whole memory is described by which term?
+Select one alternative:
+ Virtual addressing
+Base and bounds
+Segmentation
+Address space
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+10/319System call
+Which statements are true about system calls?
+Please match the values:
+True False
+Executed in user mode
+Can run restricted operations
+Can be changed by the user
+Executed using a trap (software interrupt)
+ 
+Maximum marks: 4 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+11/3110Documentation
+Which shell command is used to show documentation about a system call?
+Select one alternative:
+ help
+doc
+man
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+12/3111Memory types
+This is a memory type is part of a process. True or false?
+True False
+Random access memory
+Stack
+Read only memory
+Heap
+ 
+Maximum marks: 4 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+13/3112Memory accesses
+Consider paging without caching. 
+How many memory accesses are necessary to load a value from an address:  .
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+14/3113PFN size
+Given a page size of 2KB and a 32 bit architecture. How many bits are used for the PFN?
+ 
+ bits
+Maximum marks: 2 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+15/3114Kopi av TLB
+What is the translation look-aside buffer?
+Select one alternative:
+ a buffer for translated instructions
+A cache for page tables
+Memory for page tables
+A cache for main memory
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+16/3115Allocation
+Consider the code in the attached document.
+Mark the statements as true or false
+FalseTrue
+Memory space for r is allocated on the stack
+Memory space for r is allocated in ROM
+The function "some_function()" returns a pointer
+The memory of r cannot be accessed after the function
+"some_function()" has returned
+Memory space for r is allocated on the heap
+ 
+Maximum marks: 5 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+17/3116Address Resolution 1
+Page Table
+PFN P U/S R/W V
+a1 1 0 1 1
+b2 1 1 0 1
+c4 1 0 1 1
+--- 250 items omitted ---
+01 1 0 1 1
+02 1 0 1 0
+03 1 0 0 0Given a 16 bit architecture and a page size of 256 bytes.
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+What is the physical address for virtual address 02fe? Enter the address in hex: 
+What is the physical address for virtual address 0101? Enter the address in hex:
+What is the physical address for virtual address ff01? Enter the address in hex:
+What is the physical address for virtual address feab? Enter the address in hex:
+Maximum marks: 8 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+18/3117Address Resolution 2
+Page Table
+PFN P U/S R/W V
+3ff 1 0 1 1
+003 1 1 0 1
+2c4 1 0 1 1
+--- 16378 items omitted ---
+101 1 0 1 1
+000 1 0 1 0
+001 1 0 0 0Given a 24 bit architecture and a page size of 1024 bytes.
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+All addresses should be entered in hexadecimal notation. Each address has 6 characters.
+What is the physical address for virtual address 003fff? Enter the address in hex: 
+What is the physical address for virtual address 007ffe? Enter the address in hex:
+What is the physical address for virtual address ff8001? Enter the address in hex:
+What is the physical address for virtual address ffffff? Enter the address in hex:
+Maximum marks: 8 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+19/3118Critical section
+After which line must the mutex be locked? Enter the line number here: 
+After which line must the mutex be unlocked? Enter the line number here: 
+Maximum marks: 2 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+20/3119Trace
+Fill out the trace table for the segmentation fault case. Assume a single CPU.
+ 
+Thread 1 Thread 2
+(b, a, not
+running, c)(c, a, b, not
+running)
+(c, not running,
+a, b)(a, not running,
+c, b)
+(b, a, c, not
+running)(not running, b,
+a, c)
+ 
+Maximum marks: 3
+Select alternative
+Select alternative
+Select alternative
+Select alternative
+Select alternative
+Select alternative DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+21/3120Deadlock
+Which conditions need to be present to cause a deadlock?
+Please match the values:
+required not required
+limited memory
+no preemption
+circular wait
+multiple CPUs
+I/O operations
+mutual exclusion
+hold-and-wait
+ 
+Maximum marks: 7 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+22/3121Lock primitive
+Which primitive CPU instruction can be used to build a lock?
+Select one alternative:
+ fetch-and-load
+increment-by-one
+load-or-store
+compare-and-swap
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+23/3122Thread signaling
+Which construct should be used to signal between threads
+Select one alternative:
+ condition variable
+mutex
+flag
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+24/3123Round Robin
+Consider these statements about round-robin scheduling. Which are true/false?
+Please match the values:
+True False
+RR takes into account I/O
+RR is fair
+RR enables low response time
+RR enables low turnaround time
+ 
+Maximum marks: 4 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+25/3124Multi-level feedback queue
+Which rules apply for multi-level feedback queues to avoid causing starvation?
+Please match the values:
+appliesdoes not
+apply
+Once a job uses up its time allotment at a given level its priority is
+reduced
+After some time period S, move all the jobs in the system to the
+topmost queue
+If a job gives up CPU before the time slice is up, it stays at the
+same priority level
+If priority(A) &amp;gt; priority(B): A runs
+When a job enters the system it is placed at the lowest priority
+If priority(A) = Priority(B): A &amp;amp; B run in RR
+ 
+Maximum marks: 6 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+26/3125Process Priority
+Which shell command is used to change the priority of a process
+Select one alternative:
+ priority
+yield
+nice
+chgpri
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+27/3126Response Time
+What is the response time of job C the following schedule?
+Enter the response time of job C in seconds: 
+JOB Arrival Time First run time Completion time
+A 0 0 100
+B 10 10 20
+C 10 20 30
+ 
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+28/3127Page access cache
+Consider a newly-created process that has been allocated a cache size of 5 pages, and then
+generates the following page accesses:
+A C E F D B A B F F D C C G A G C E F D G E B D G G
+ 
+How many cache misses are observed for this access stream when using of the FIFO page
+replacement algorithm?
+ 
+What is its hit rate in percent? Hit rate  %
+ 
+How many cache misses are observed for this access stream when using of the FIFO page
+replacement algorithm and a cache size of 6?
+ 
+The cache algorithm is replaced with the least frequently used algorithm. The cache size remains
+at 6. How many cache misses can be observed?
+  
+Maximum marks: 12 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+29/3128Locality
+Which properties of the access pattern enable a cache to perform well?
+Please match the values:
+Does not enable Does enable
+Process locality
+Remote locality
+Spatial locality
+Address locality
+Temporal locality
+ 
+Maximum marks: 5 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+30/3129Disk environment
+Which environmental factors increase latency of a harddisk with rotating disks?
+Select one alternative:
+ Light
+Airpressure
+vibrations
+Maximum marks: 1 DAT320 Operativsyst emer og systemprogrammering HØST 2022 - Konte
+31/3130Harddisk performance
+ Cheetah 15K Barracuda
+Capacity 300GB 1TB
+RPM 15000 7200
+Average Seek 4 ms 9 ms
+Max Transfer 125 MB/s 105 MB/s
+Platters 4 4
+Cache 16 MB 16/32MB
+Connection SCSI SATAGiven the following specifications of 2 harddisks, what is the Random I/O Rate in MB/s of the
+Cheetah:  vs. the Barracuda 
+ 
+ 
+Maximum marks: 2Question 15
+Attached
+Consider the following code.
+1 #include <stdio.h>
+2 #include <stdlib.h>
+3 int *some_function() {
+4 int *r = malloc(sizeof(int));
+5 *r = 1;
+6 return r;
+7 };
+8
+9 int main(int argc, char *argv[])
+10 {
+11 printf("%d", *some_function());
+12 }
+1Question 18
+Attached
+Consider the following code. The function queue_enqueue can be called
+by multiple threads. Identify the critical section in this function.
+1 typedef struct __node_t {
+2 int value;
+3 struct __node_t *next;
+4 } node_t;
+5
+6 typedef struct __queue_t {
+7 node_t *head;
+8 node_t *tail;
+9 pthread_mutex_t lock;
+10 } queue_t;
+11
+12 void queue_enqueue(queue_t *q, int value) {
+13 node_t *tmp = malloc(sizeof(node_t));
+14 assert(tmp != NULL);
+15 tmp->value = value;
+16 tmp->next = NULL;
+17 q->tail->next = tmp;
+18 q->tail = tmp;
+19 }
+20
+21 void queue_init(queue_t *q) {
+22 node_t *tmp = malloc(sizeof(node_t));
+23 tmp->next = NULL;
+24 q->head = q->tail = tmp;
+25 pthread_mutex_init(&q->lock0, NULL);
+26 }
+1Question 19
+Attached
+1 Trace
+Consider the following code. This code sometimes fails with a Segmentation
+fault. Fill out the trace table for this case. Assume a single CPU.
+1 #include <pthread.h>
+2
+3 typedef struct __info {
+4 int counter = 0;
+5 } __info_t;
+6
+7 __info_t *info;
+8
+9 void *count() {
+10 if (info) { // a
+11 info->counter = info->counter + 11; // b
+12 }
+13 }
+14
+15 void *ended() {
+16 info = NULL; // c
+17 }
+18
+19 int main(int argc, *char[] argv) {
+20 info = malloc(sizeof(__info_t));
+21 assert(info != NULL);
+22 pthread_t thread_1, thread_2;
+23 phtread_create(&t1, NULL, count);
+24 pthread_create(&t2, NULL, ended);
+25 }
+1Question 6
+Attached
+Which outputs of this program are possible?
+1 #include <stdio.h>
+2 #include <stdlib.h>
+3 #include <unistd.h>
+4 int main(int argc, char *argv[]) {
+5 printf("hello world (pid:%d)\n", (int) getpid());
+6 fflush(stdout);
+7 int rc = fork();
+8 if (rc < 0) { // fork failed; exit
+9 fprintf(stderr, "fork failed\n");
+10 exit(1);
+11 } else if (rc == 0) {
+12 printf("hello, I am child (pid:%d)\n", (int) getpid());
+13 } else {
+14 int rc_wait = wait(NULL);
+15 printf("hello, I am parent of %d (rc_wait:%d) (pid:%d)\n",
+16 rc, rc_wait, (int) getpid());
+17 }
+18 printf("goodbye world (pid:%d)\n", (int) getpid());
+19 return 0;
+20 }
+•Alternative 1
+hello world (pid:83485)
+hello, I am parent of 83486 (rc_wait:83486) (pid:83485)
+goodbye world (pid:83485)
+hello, I am child (pid:83486)
+goodbye world (pid:83486)
+•Alternative 2
+hello world (pid:83485)
+hello, I am child (pid:83486)
+goodbye world (pid:83486)
+hello, I am parent of 83486 (rc_wait:83486) (pid:83485)
+goodbye world (pid:83485)
+•Alternative 3
+1hello world (pid:83486)
+hello world (pid:83485)
+hello, I am parent of 83486 (rc_wait:83486) (pid:83485)
+goodbye world (pid:83485)
+hello, I am child (pid:83486)
+goodbye world (pid:83486)
+•Alternative 4
+hello world (pid:83485)
+hello, I am parent of 83486 (rc_wait:83486) (pid:83485)
+goodbye world (pid:83485)
+hello world (pid:83486)
+hello, I am child (pid:83486)
+2Question 7
+Attached
+Consider the program carefully. Which outputs of this program are pos-
+sible?
+1 #include <stdio.h>
+2 #include <stdlib.h>
+3 #include <unistd.h>
+4 int main(int argc, char *argv[]) {
+5 printf("hello world (pid:%d)\n", (int) getpid());
+6 fflush(stdout);
+7 int rc = fork();
+8 if (rc < 0) { // fork failed; exit
+9 fprintf(stderr, "fork failed\n");
+10 exit(1);
+11 } else if (rc == 0) {
+12 printf("hello, I am child (pid:%d)\n", (int) getpid());
+13 } else {
+14 printf("hello, I am parent of %d (pid:%d)\n",
+15 rc, (int) getpid());
+16 }
+17 return 0;
+18 }
+•Alternative 1
+hello world (pid:83655)
+hello, I am child (pid:83656)
+hello, I am parent of 83656 (pid:83655)
+•Alternative 2
+hello world (pid:83655)
+hello, I am parent of 83656 (pid:83655)
+hello, I am child (pid:83656)
+•Alternative 3
+hello world (pid:83655)
+hello world (pid:83655)
+hello, I am child (pid:83656)
+hello, I am parent of 83656 (pid:83655)
+1•Alternative 4
+hello world (pid:83655)
+hello, I am child (pid:83656)
+hello world (pid:83655)
+hello, I am parent of 83656 (pid:83655)
+2

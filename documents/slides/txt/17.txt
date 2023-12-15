@@ -1,0 +1,122 @@
+Chapter 17 Free-Space Management Free-space management becomes diﬃcult 
+-When free space consists of variable-sized units
+-Arises
+-User-level memory-allocation libraries (malloc() and free())
+-OS managing physical memory when using segmentation to implement virtual memory
+-Problem: external fragmentation
+-Not enough contiguous space for allocation request
+Example: Total free space available 20 bytes
+Fragmented into two chunks of size 10 each
+Request: 15 bytes — fails even though there are 20 bytes free
+Q: How to manage free space, when satisfying variable-sized requests?
+Q: What strategies minimize fragmentation?
+Q: What are the time and space overhead of the diﬀerent approaches?
+17.1 Assumptions Basic interface:
+-void * malloc(size)
+-free(void *ptr)
+The memory manager
+-knows the size from the previous allocation
+-Keeps a free list
+(free list refer to a generic data structure to manage free space…)
+-once a memory region is given to a process;
+-Can’t take back the memory that was given to the proc.
+-No compaction of free space is possible
+Focus on external fragmentation
+Can also have internal fragmentation; if a program requests more memorythan what it needs then the “unused” memory goes to waste!
+17.2 Low-level Mechanisms Splitting and Coalescing Def. Free list: set of elements describing free space still in the heap. 
+Example: Free list for this heap:
+-One entry describe the ﬁrst 10-byte free segment (bytes 0-9)
+-One entry for the other free segment (bytes 20-29)
+Req A:  11 bytes: fails!
+Req B:  10 bytes: both free chunks could be used!
+Req C:  1 byte?
+Memory allocator perform action know as splitting: 
+- Find a free chunk that satisﬁes the request and split it into two
+- Return the ﬁrst chunk to the caller (1 byte)
+- Second chunk remain on the free list (9 bytes)
+Free list after splitting could look like this:
+
+Coalescing of free space: Example from the original heap allocation
+Now if user calls free(10)
+Problem:
+-Entire heap is free
+-But divided into three chunks of 10 bytes each 
+-Request for 20 bytes would still fail.
+Solution:  coalesce free space (when a chunk of memory is freed)
+Look at the neighboring chunks and merge them into a single larger free chunk.
+   
+Tracking the Size of Allocated Regions free(void *ptr):
+Q: Given given a pointer, how can the malloc library quicklydetermine the size of the chunk being freed.(and incorporate the space back into the free list)
+To accomplish this task:
+Allocator store extra info in a header block. Header block is also in memory, but just before the “handed-out” chunk of memory…
+Example: Fig 17.1:
+ptr = malloc(20);
+Header contains:
+- Size of allocated region (20 bytes in this case) 
+- Additional pointers to speed up deallocation (freeing)
+- Magic number: integrity checking
+- And other information
+Example (simpliﬁed): Fig. 17.2
+type header struct {
+	 size int
+	 magic int
+}
+When process calls free(ptr):
+Allocator uses simple pointer arithmetic to ﬁnd the header:
+void free(void *ptr) {
+	 header *hptr = (void *) ptr - sizeof(header);
+	 header.size to get the size of the allocated memory
+}
+Note:
+-With a request for N bytes:
+-Allocator actually allocates (N+sizeof(header)) bytes.
+-The overhead is sizeof(header)
+Embedding a Free List Q: How do we keep a free list in the free space itself?
+Example. Managing 4096-byte chunk of heap memory.
+type node_t struct {
+	 size 	 	 int	 	 // 4 bytes
+	 node_t	 *next	 	 // 4 bytes
+}
+Code to create a heap using the mmap() system call:
+node_t *head = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);head->size = 4096 - sizeof(node_t);head->next = NULL;
+After this code, we have a heap with one free chunk.
+Size of heap: 4088 = 4096 - sizeof(node_t)
+Heap ptr at virtual address: 16 KB
+Example: Request for 100 bytes
+-Only one chunk of size 4088
+-So this chunk is chosen
+-Split chunk in two
+-One for the 100 bytes + sizeof(header) = 108
+-Remaining part is the free chunk
+Assuming 8-byte header,the heap now looks like Fig 17.4
+
+Example continues: Two more 100-byte allocations
+Three allocations of 100 bytes or 108 bytes (incl. header)
+Total 324 bytes of heap allocated memoryHead points to 16KB+324
+Q: What happens when a process calls free?
+Example. Calling free(16500);
+-Start of memory region 16384 (16KB)
+-16500 = sptr in Fig 17.5 / 17.6
+-This is the pointer returned by the second callto malloc()
+-16500 - 16384 = 116 = 108 +8
+-108 for the ﬁrst malloc chunk
+-8 bytes header for “this” chunk
+Allocator immediately ﬁnds the size of region to free.(and adds the free chunk back on the free list).
+Now head of list points to the ﬁrst entry (the 100 newly freed bytes)The head node’s next pointer points tothe next free chunk (16708)
+Fig. 17.7 shows all chunks are free —free list is highly fragmented
+Go through the list and merge neighboring chunks!
+To get back to the original heap with one free chunk; Fig. 17.3.
+
+17.3 Basic Strategies Goal: allocator should be fast and minimize fragmentation
+Challenge: allocations and free requests are arbitrary and not predictable
+Best Fit 1.Search free list for free chunks >= requested size
+2.Return the smallest chunk in the candidate set
+Objective: reduce wasted spaceCost: naive implementations pay heavy performance penalty (require exhaustive search: O(N))Drawback: can result in many small chunks (fragmentation)
+Worst Fit 1.Find the largest chunk
+2.Return requested amount
+Objective: leave big chunks free instead of lots of small chunksCost: same as for Best ﬁt.Drawback: studies show it leads to excess fragmentation First Fit 1.Find ﬁrst chunk that is big enough
+2.Returns requested amount
+Objective: FastCost: not exhaustive searchDrawback: pollutes beginning of free list with small objects
+Next Fit Keep extra pointer to the location in the list where one was looking last.Start searching from this location.
+Objective: spread searches uniformly over the listCost: same as for First FitDrawback: need an extra pointer
+

@@ -1,0 +1,824 @@
+Will cover the main aspects of chapters 13-23. And  Some other pre-requisites for understanding memory virtualization. Important! The main content is in the book, these notes are here to help you better understand the content of the book1Memory VirtualisationMemory Virtualisation1.What is memory?- addresses, data, and busses 2.Number systems, binary, decimal, hexadecimal 3.What is memory virtualization? 4.What is memory API? 5.Virtualization by base and bound 6.Virtualization by segmentation 7.Free space management 8.Paging: Principle, TLB, smaller Tables 9.Beyond physical memory: Mechanisms, Policies, CVMS 
+2What is memory
+3CPU
+Physical Memory
+Data BusADDR. Bus
+Not directly covered in the book, but necessary for understanding the coming chapters!What is memory
+4CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+The address bus is used to access the memory locationsWhat is memory
+5CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+00000000 (0x00)
+11111111 (0xFF)Memory locations are bits representing binary numbers  (often written in hexadecimal)What is memory
+6CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+00000000 (0x00)
+11111111 (0xFF)Memory locations are bits representing binary numbers  (often written in hexadecimal)Example of 8 bits address busWhat is memory
+7CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+00000000 (0x00)
+11111111 (0xFF)Memory locations are bits representing binary numbers  (often written in hexadecimal)Example of 8 bits address bus. With 8 bits we can represent 2^8=256 possibilitiesWhat is memory
+8CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+00000000 (0x00)
+11111111 (0xFF)Memory locations are bits representing binary numbers  (often written in hexadecimal)Example of 8 bits address bus. It means that we can address 256 memory locations.What is memory
+9CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+00000000 (0x00)
+11111111 (0xFF)The content that is stored in memory locations is transported to and from the CPU via the data busWhat is memory
+10CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+00000000 (0x00)
+11111111 (0xFF)The content that is stored in memory locations is transported to and from the CPU via the data busFor example a 16 bits data bus can read or write 2 bytes (16 bits) at the time from a specific address location What is memory
+11CPU
+Physical Memory
+Data BusADDR. Bus
+Address space
+00000000 (0x00)
+11111111 (0xFF)The memory size in bytes is thus the number of possible location times the number of bytes per location. In our case 256. 2=5012 bytesSome Concepts bit is 1 or 0  nibble is 4 bits byte is 8 bits word is n bytes  binary-> base 2 decimal-> base 10 hexadecimal -> base 1612What is memory
+Question 1: Let 101 be a decimal number. How would you represent it in the binary system and in the hexadecimal system? 
+13What is memoryQuestion 1: Let 101 be a decimal number. How would you represent it in the binary system and in the hexadecimal system? Answer 1: 101->1100101 binary  101->65 Hex14What is memory
+MethodWhat is memory
+15
+Physical Memory
+Data BusADDR. Bus
+Address space
+Question 2: With 64-bits address bus and 64-bits data bus. What is the memory size in bytes?CPU
+What is memory
+16
+Physical Memory
+Data BusADDR. Bus
+Address space
+Question 3: For a memory size of 5 KB, and a word size of 4 bytes. How many bits is the address bus? CPU
+Memory APIWhat is a pointer
+17Example1.c
+18#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+What will happen?Example1.c
+19#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000undefined
+16F7AB300100660000a is an address that holds an address of some undeﬁned intaExample1.c
+20#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000undefined
+16F7AB300100660000What will happen?aExample1.c
+21#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000undefined16F7AB2FC316F7AB300100660000b is an address that holds an int value 3baExample1.c
+22#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionWhat will happen?abAddressValue
+100660000undefined16F7AB2FC316F7AB300100660000Example1.c
+23#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2FC316F7AB300100660000The address stored in address a is now holding the value stored in babExample1.c
+24#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2FC316F7AB300100660000aWhat will happen?bExample1.c
+25#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2F010066000016F7AB2FC316F7AB300100660000alost_value contains now the same pointer as ablost_valueExample1.c
+26#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2F010066000016F7AB2FC316F7AB300100660000aWhat will happen?blost_valueExample1.c
+27#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2F010066000016F7AB2FC416F7AB300100660000aThe content of b is incrementedblost_valueExample1.c
+28#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2F010066000016F7AB2FC416F7AB300100660000aWhat will happen?blost_valueExample1.c
+29#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2F010066000016F7AB2FC416F7AB30016F7AB2FCaThe content of a is now pointing to the address of bblost_valueExample1.c
+30#include <stdio.h> int main() { int *a;  int b=3; *a=b; int *lost_value=a; b++; a=&b; return 0; } ExecutionAddressValue
+100660000316F7AB2F010066000016F7AB2FC416F7AB30016F7AB2FCaSystem call likeblost_valueA run of example1.c
+31➜  pointers git:(master) ✗ ./example1                 -----Step 1------- the address of a = 0x16f7ab300  the content of a = 0x100660000  the value that the content of a is pointing at *a = -373707640 (undefined) -----Step 2------- the address of b (&b) = 0x16f7ab2fc  the content of b = 3  -----Step 3------- make the content of 'a' point the value b:  the address of a = 0x16f7ab300  the address of b (&b) = 0x16f7ab2fc  the content of a = 0x100660000  the value that the content of a is pointing at *a = 3 = b = 3 -----Step 4------- make the address of a be the address of b:  the address of a = 0x16f7ab300  the content of a = 0x16f7ab2fc = &b=0x16f7ab2fc  the value that the address of a is pointing to *a = 4 = b = 4 !!!!! lost pointer !!!!!!!! address 0x16f7ab2f0, content 0x100660000, value 3% Memory APIAbout malloc and free 
+32Memory APIPoints: Malloc and Free And be careful Stack over flow https://www.youtube.com/watch?v=1S0aBV-Waeo&ab_channel=Computerphile 33Base and bound  Address TranslationFirst approach for mapping virtual address to physical address (Chapter 15)
+34Base and bound  Address Translation
+35
+From the book Virtual space as seen by your program to physical space as seen by the OS Base and bound  Address Translation
+36ADDR. BusCPUMMUThe address bus addresses the physical memory, and the MMU is here to translate virtual addresses to physical addresses. Any memory access goes via the MMU !! 
+Physical Memoryword size=1 byteOS
+32KB
+CodeHeap
+Stack48KB
+CodeHeap
+StackBase and bound  Address TranslationThe physical memory of every process is organised in a contiguous space just like in the virtual memory. But starts a location called base. The base of P1 here is 32KB37Physical Memoryword size=1 byteOS
+32KB
+CodeHeap
+Stack48KB
+CodeHeap
+StackVirtual Memoryword size=1 byteP1
+CodeHeap
+StackVirtual Memoryword size=1 byteP2
+CodeHeap
+StackWhen a process needs to access memory, its virtual address is translate to physical memory by the MMU. What information is needed for that? Base and bound  Address Translation
+38
+CodeHeap
+StackVirtual Memoryword size=1 byteP1
+CodeHeap
+StackVirtual Memoryword size=1 byteP2
+Physical Memoryword size=1 byteOS
+32KB
+CodeHeap
+Stack48KB
+CodeHeap
+Stack
+ADDR. BusCPUMMUBase and bound  Address TranslationMMU does: PA=VA + Base If VA > Bounds or VA <0 then Raise and exception 
+39ADDR. BusCPUMMU
+Physical Memoryword size=1 byteOS
+32KB
+CodeHeap
+Stack48KB
+CodeHeap
+StackThe OS configures the MMU with Base and Bounds registers for every process.Base and bound  Address TranslationThe OS thus has an extra responsibility under context switch. It has to save and restore Base and Bounds in the PCB when it schedules processes.
+40Base and bound  Address TranslationLimitations Suffers from internal and external fragmentation 
+41Base and bound  Address TranslationExternal fragmentation Find a scenario in which the physical memory has enough space but not enough contiguous space. 
+42Internal fragmentation The empty space between the heap and stack is a waste. Segmentation Chapter 16
+43Segmentation came to address some of the limitations of base and bound approach. Do you remember? Segmentation Chapter 16
+441. Internal fragmentation Segmentation Chapter 16
+451. Internal fragmentation All free space between heap and stack is allocated even though not used Segmentation Chapter 16
+461. Internal fragmentation All free space between heap and stack is allocated even though not used 2. External fragmentation Segmentation Chapter 16
+471. Internal fragmentation All free space between heap and stack is allocated even though not used 2. External fragmentation Hard to find contiguous spaces even though many small spaces exist Segmentation Chapter 16
+48Segmentation exploits the fact that the virtual memory consists of 3 segments: - Program code (static memory) - Heap (dynamic memory)- OS  - Stack (dynamic memory)- Runtime 
+Segmentation Chapter 16
+49Segmentation exploits the fact that the virtual memory consists of 3 segments: - Program code (static memory) - Heap (dynamic memory)- OS  - Stack (dynamic memory)- Runtime Same approach as base and bound but with 3 segments per process.  The three segments will be? 
+Segmentation Chapter 16
+50Segmentation exploits the fact that the virtual memory consists of 3 segments: - Program code (static memory) - Heap (dynamic memory)- OS  - Stack (dynamic memory)- Runtime Same approach as base and bound but with 3 segments per process.  The three segments will be? Code, Heap, and Stack :-) 
+Segmentation Chapter 16
+51
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KB28KBA note on the terminology.  In the book you will see that memory sizes are often used to represent address locations. Segmentation Chapter 16
+52
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free28KBA note on the terminology. In the book you will see that memory sizes are often used to represent address locations. The size of memory above the stack segment is 28 kilo bytes. Segmentation Chapter 16
+53
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free28KBA note on the terminology. In the book you will see that memory sizes are often used to represent address locations. The size of memory above the stack segment is 28 kilo bytes. The location of the top of the stack segment is:  28 kilo=28 . 1024=28672 (base 10) ->0x7000 (Hex) Segmentation Chapter 16
+54
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KB28KBA note on the terminology. In the book you will see that memory sizes are often used to represent address locations. The size of memory above the code segment is 32 kilo bytes. Segmentation Chapter 16
+55
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KB28KBA note on the terminology. In the book you will see that memory sizes are often used to represent address locations. The size of memory above the code segment is 32 kilo bytes. The location of the top of the code segment is:  32 kilo=32 . 1024=32768 (base 10) ->0x8000 (Hex) Segmentation Chapter 16
+56ADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KB28KBThe address bus addresses the physical memory, and the MMU is here to translate virtual addresses to physical addresses. Any memory access goes via the MMU !! Segmentation Chapter 16
+57
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBWhich information does the MMU need to have in order translate virtual to physical address for a given process? 
+14KB16KB6KBSegmentation Chapter 16
+58
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU14KB16KB
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KB6KBWhich information does the MMU need to have in order translate virtual to physical address for a given process? Segmentation Chapter 16
+59
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+14KB16KB
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KB6KBWhich information does the MMU need to have in order translate virtual to physical address for a given process? Segmentation Chapter 16
+60Exercise 1  A process wants to access virtual address 100 (code segment), what would the physical address be?  
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KB6KB14KB16KB
+Segmentation Chapter 16
+61Exercise 1  A process wants to access virtual address 100 (code segment), what would the physical address be? 
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KB
+14KB16KB6KB100
+Segmentation Chapter 16
+62Exercise 1 (Answer)  A process wants to access virtual address 100 (code segment), what would the physical address be? 100-(0 . 1024)=100—>offset from top of segment 32768 (32KB) + 100 (offset)=32868 offset must be less than size (bound) 
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KB
+14KB16KB6KB100
+Segmentation Chapter 16
+63Exercise 2  A process wants to access virtual address 4200 (heap segment), what would the physical address be? 
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KB
+14KB16KB6KB4200
+Segmentation Chapter 16
+64Exercise 2 (answer)  A process wants to access virtual address 4200 (heap segment), what would the physical address be? 4200-(4 . 1024)=104—>offset from top of segment 34816 (34KB) + 104 (offset)=34920 offset must be less than size (bound) 
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free28KB32KB34KBOKB2KB4KB14KB16KB6KB4200
+Segmentation Chapter 16
+65MMU01000001101000Segment 2 bitsOffset 12 bits012345678910111213Virtual Address Hardware procedure (MMU) One approach is to have the segment and offset as part of virtual address.
+010011Segmentation Chapter 16
+66Hardware like procedure (MMU) Example V A=4200-> 0x1068-> 01000001101000SEG_MASK=0x3000=11000000000000SEG_SHIFT=12OFFSET_MASK= 0xFFF=00111111111111
+MMUSegmentation Chapter 16
+67Hardware like procedure (MMU) Example V A=4200-> 0x1068-> 01000001101000SEG_MASK=0x3000=11000000000000SEG_SHIFT=12OFFSET_MASK= 0xFFF=00111111111111V A & SEG_MASK= 01000001101000 AND 11000000000000 = 01000000000000segment= (V A & SEG_MASK)>> SEG_SHIFT = 01000011001000 >> 12= 01MMUSegmentation Chapter 16
+68Hardware like procedure (MMU) Example V A=4200-> 0x1068-> 01000001101000SEG_MASK=0x3000=11000000000000SEG_SHIFT=12OFFSET_MASK= 0xFFF=00111111111111V A & SEG_MASK= 01000001101000 AND 11000000000000 = 01000000000000segment= (V A & SEG_MASK)>> SEG_SHIFT = 01000011001000 >> 12= 01offset= V A & OFFSET_MASK= 00000001101000 (104 decimal)MMUSegmentation Chapter 16
+69Exercise 3  A process wants to access virtual address 15 KB (stack segment), what would the physical address be? 
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KB
+14KB16KB6KB15KBSegmentation Chapter 16
+70Exercise 3 (answer) A process wants to access virtual address 15 KB (stack segment), what would the physical address be? 15KB-16KB=-1024—>offset from bottom of segment 28672 (28 KB) + -1024 (offset)=27648 (27KB) |offset| must be less than size (bound) 
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free28KB32KB34KBOKB2KB4KB14KB16KB6KB15KBSegmentation Chapter 16In the book it is mentioned that we need to keep an additional bit for the direction of growth. Is it necessary? Can we modify the procedure to also apply for the stack?  
+71
+Does not apply to stackSegmentation Chapter 16
+72V A=15K-> 0x15360-> 11110000000000SEG_MASK=0x3000=11000000000000SEG_SHIFT=12OFFSET_MASK= 0xFFF=00111111111111V A & SEG_MASK= 11110000000000 AND 11000000000000 = 11000000000000segment= (V A & SEG_MASK)>> SEG_SHIFT = 11000000000000 >> 12= 11offset= V A & OFFSET_MASK= 00110000000000 (3072 decimal)
+ 
+11In the book it is mentioned that we need to keep an additional bit for the direction of growth. Is it necessary? Can we modify the procedure to also apply for the stack?  
+Segmentation Chapter 16
+73
+We need a circuit that can use this information Segmentation Chapter 16
+74The point:  Because the stack grows in the opposite direction than the heap, more logic is required.  Segmentation Chapter 16
+75Protection bit Enables sharing between processes.  Typically, code segments could be shared between different process for read-execute. 
+Segmentation Chapter 16
+76Setting code segment to read-execute: •Multiple processes can share code without harming isolation •Each process still thinks that it is accessing its own private memory while OS is secretly sharing their memory! Segmentation Chapter 16
+77HW: must check if a particular access is permissible   Example: if user process tries to  •Write to a read-only segment, or •Execute from a non-executable segment, •HW should raise an exception Segmentation Chapter 16
+78General problems with free space management: External fragmentation 
+Segmentation Chapter 16
+79OS Role on free space management: •Should be easier to find free contiguous space for new processes. Because the space between heap and stack is better exploited.  •Should try to allocate the right part of available physical memory depending on the segment sizes. Segmentation Chapter 16
+80OS Role on context switch: •Save and restore segmentation registers (MMU) on context switch. Segmentation Chapter 16
+81Segmentation Chapter 16
+82
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOS
+Stack
+CodeHeapFreePhysical Memoryword size=1 byteOS
+Stack
+CodeHeapFree32KB34KBOKB2KB4KB28KB
+Short story summary: Assume a round robin scheduling policy, and MMU based on segmentation.  P2 is ready and P1 is running a timer interrupt occurs, describe the steps that will happen so that P2 runs. 
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+83
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 1: A timer interrupt has happened 
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+84
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 2: The execution context of P1 is stored in the kernel stack. (including segments) 
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+85
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 3: CPU goes into kernel mode  
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+86
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 4: OS interrupt handler is now using the CPU  
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+87
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 5: OS can now save the context of P1 (from kernel stack) in the PCB of P1.  
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+88
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 6: OS can now decide on which process to run next. P2 in this case because of round robin policy 
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+89
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 7: OS restores the execution context from PCB of P2 in the kernel stack. Including the segment table 
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+90
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 8: OS returns from trap (interrupt) 
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+91
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 9: The CPU restores the execution context from the kernel stack (P2 now) 
+14KB16KB6KB
+Process 2Virtual Segmentation Chapter 16
+92
+Process 1Virtual MemoryCodeHeapStackADDR. BusCPUMMU
+Physical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+FreePhysical Memoryword size=1 byteOSFree
+Stack
+CodeHeapFree
+Free32KB34KBOKB2KB4KB28KBShort story summary: Step 10: The CPU is now in user mode 
+14KB16KB6KB
+Process 2Virtual SegmentationSummary Generalised based and bound with 3 segments (or more) Improves the internal fragmentation problem as seen in base and bounds Kind of improves the external fragmentation problem -This will require a smart management of free space -And maybe not enough anyway because segments can still be large Next——> Free space management93Free Space Management Chapter 17Because the available memory needs to be allocated and freed, it has to be managed. 
+94Free Space ManagementWhen a process starts, the operating system must load it into memory. What does that mean if we are using segmentation for example?
+95Free Space ManagementWhen a process starts, the operating system must load it into memory. What does that mean if we are using segmentation for example? Well, the OS will find free space in the physical memory and allocate the 3 segments: code, heap, and stack.  
+96Free Space ManagementWhen a process starts, the operating system must load it into memory. What does that mean if we are using segmentation for example? Well, the OS will find free space in the physical memory and allocate the 3 segments: code, heap, and stack.  The free memory before and after the allocation is not the same. The OS must keep track of the available physical memory.   97Free Space ManagementWhen a process starts, the operating system must load it into memory. What does that mean if we are using segmentation for example? Well, the OS will find free space in the physical memory and allocate the 3 segments: code, heap, and stack.  The free memory before and after the allocation is not the same. The OS must keep track of the available physical memory. The OS will also store in the PCB list the content of segment registers, i.e,. base and bound for each segment.  98Free Space ManagementA similar situation also happens in the runtime library.  For example the function * malloc(size) in c hides what really happens behinds the scene. It occasionally uses brk/sbrk or mmap calls and could get a big chunk of memory. (base bound, segmentation, or paging…)  
+99Free Space ManagementA similar situation also happens in the runtime library.  For example the function * malloc(size) in c hides what really happens behinds the scene. It occasionally uses brk/sbrk or mmap calls and could get a big chunk of memory. (base bound, segmentation, or paging…)  However the c library (runtime library) needs also to manage that chunk of memory for the user program.  
+100Free Space ManagementFree space management is about algorithms and data structures for allocating and freeing space efficiently and for avoiding fragmentation 
+101Free Space ManagementExample 1 Two processes are already in memory
+102
+Physical MemoryOS
+Free Space Management
+103
+Process 3Virtual MemoryCodeHeap
+Stack
+Physical MemoryOS
+Example Two processes are already in memory Process 3 arrives, so the OS has to find place for it.  Free Space Management
+104
+Process 3Virtual MemoryCodeHeap
+Stack
+Physical MemoryOS
+Example Two processes are already in memory Process 3 arrives, so the OS has to find place for it.  The OS has to consult its data structure about free space, and figure out where to place the 3 segments of process 3.  Free Space Management
+105
+Process 3Virtual MemoryCodeHeap
+Stack
+Physical MemoryOS
+Bad allocation choices could lead to external fragmentation (not enough contiguous space) Free Space Management
+106
+Physical MemoryOS
+Assumptions: Basic interface - *malloc(size) - free(*ptr) Memory manager (General concept): - Knows the size of allocations - keeps a free list (data structure) - Once it gives a memory region to a process it cannot take it back.  Free Space Management
+107Low-level Mechanisms Scenario 1: A process requests 11 bytes, what will happen? 
+Memory
+Free listFree Space Management
+108Low-level Mechanisms Scenario 1: A process requests 11 bytes, what will happen? No contiguous space, operation fails! 
+Memory
+Free listFree Space Management
+109Low-level Mechanisms Scenario 2: A process requests 10 bytes, what will happen? 
+Memory
+Free listFree Space Management
+110Low-level Mechanisms Scenario 2: A process requests 10 bytes, what will happen? Any free chunk could be used! 
+MemoryUsed
+Free listheadFree Space Management
+111Low-level Mechanisms Scenario 3: A process requests 1 byte, what will happen? 
+Memory
+Free listFree Space Management
+112Low-level Mechanisms Scenario 3: A process requests 1 byte, what will happen? Splitting happens! Find a free chunk and split it. Free list
+MemoryUsed21Free Space Management
+113Low-level Mechanisms Scenario 4: A process frees(ptr 10) 10 bytes, what will happen? 
+Memory
+Free listFree Space Management
+114Low-level Mechanisms Scenario 4: A process frees 10 bytes, what will happen? The entire heap is free but divided in chunks. A request of more than 10 bytes would fails.  So what we do? Free list
+MemoryfreeFree Space Management
+115Low-level Mechanisms Scenario 4: A process frees 10 bytes, what will happen? The entire heap is free but divided in chunks. A request of more than 10 bytes would fails.  So what we do? Coalescing merge neighboring free chunks  Free list
+Memoryfree
+Free Space ManagementMore details on how a data structure for managing free list can be implemented
+116
+Space (4KB= 4096 bytes)VA=16KB
+VA=20KBFree Space Management
+117
+Space (4KB= 4096 bytes)Free ListVA=16KB
+VA=20KB
+More detailsFree Space ManagementMore details
+118
+Space (4KB= 4096 bytes)Free ListVA=16KB
+VA=20KB
+size: 4088next: 0…8 bytes
+4088 bytesHead (address)
+One Free ChunkFree Space ManagementMore details on how a data structure 
+119
+Space (4KB= 4096 bytes)Free ListVA=16KB
+VA=20KB
+size: 3980next: 0…8 bytes3980 bytesHead (address)
+Allocated regionsize: 100magic: 1234……8 bytes100 bytes 
+One Free Chunk and One allocated Chunk. The Head pointer is movedFree Space ManagementMore details on how a data structure 
+120Free List
+Allocated region
+What are we pointing at?????
+????Free Space ManagementMore details on how a data structure 
+121Free List
+Allocated region
+What are we pointing at?1638416392??
+????Free Space ManagementMore details on how a data structure 
+122Free List
+Allocated region
+What are we pointing at?16384163921649216500
+16716167081660016608Free Space ManagementMore details on how a data structure 
+123Free List
+Allocated region
+What happens when we free sptr (16500) ?16384163921649216500
+16716167081660016608Free Space Management
+124Free List
+Allocated regionWhat happens when we free sptr (16500) ?
+More details on how a data structure 16384163921649216500
+16716167081660016608Free Space ManagementWe have seen how the data structure for free space can be organised.  But, which strategy is efficient with respect to allocating, freeing, and which avoids external fragmentation? Best Fit? Worst Fit? First Fit? Next Fit? 125Free Space ManagementBest Fit A request of 15 arrives, what happens? 
+126head103020NULLFree Space ManagementBest Fit A request of 15 arrives, what happens? Search the list, find all places that fit, 30 and 20 in this case. choose the smallest.  
+127head103020NULLhead10305NULLFree Space ManagementWorst Fit A request of 15 arrives, what happens? 
+128head103020NULLFree Space ManagementWorst Fit A request of 15 arrives, what happens? Search the list, find all places that fit, 30 and 20 in this case. choose the largest. 
+129head103020NULLhead101520NULLFree Space ManagementFirst Fit A request of 15 arrives, what happens? 
+130head103020NULLFree Space ManagementFirst Fit A request of 15 arrives, what happens? From start find a fit, 10 does not fit, 30 does. Choose 30!  
+131head103020NULLhead101520NULLFree Space ManagementNext Fit A request of 25 arrives, then  6 arrives, what happens? 
+132head103020NULLFree Space ManagementNext Fit A request of 25 arrives, then  6 arrives, what happens? 
+133head103020NULLhead10520NULLhead10514NULLFree Space ManagementBuddy allocation 
+1340008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes All space is free 
+1350008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte divide by 2 until you get a fit 
+1360008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte divide by 2 until you get a fit 
+1370008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte divide by 2 until you get a fit 
+1380008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes 
+1390008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes 
+1400008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes divide by 2 until you get a fit 
+1410008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes 
+1420008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes 
+1430008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes 
+1440008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes 
+1450008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes 
+1460008 bytes001010011100101110111Allocated but not usedInternal fragmentationFree Space ManagementBuddy allocation A:1 byte B:2 bytes  C:3 bytes D:4 bytes No place for D ! 
+1470008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes —> Free B C:3 bytes D:4 bytes No place for D ! 
+1480008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes —> Free B C:3 bytes D:4 bytes No place for D ! 
+1490008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte B:2 bytes —> Free B C:3 bytes D:4 bytes No place for D ! No merge!! Buddy not free Buddy —> neighbour with same size 1500008 bytes001010011100101110111
+Free Space ManagementBuddy allocation A:1 byte —> Free A B:2 bytes C:3 bytes D:4 bytes No place for D ! 
+1510008 bytes001010011100101110111Free Space ManagementBuddy allocation A:1 byte —> Free A B:2 bytes C:3 bytes D:4 bytes No place for D ! merge!! Buddy is free Buddy —> neighbour with same size 1520008 bytes001010011100101110111
+Free Space ManagementBuddy allocation A:1 byte —> Free A B:2 bytes C:3 bytes D:4 bytes No place for D ! merge!! Buddy is free Buddy —> neighbour with same size 1530008 bytes001010011100101110111
+Free Space ManagementBuddy allocation A:1 byte —> Free A B:2 bytes C:3 bytes D:4 bytes No place for D ! merge!! Buddy is free Buddy —> neighbour with same size 1540008 bytes001010011100101110111
+Free Space ManagementBuddy allocation A:1 byte —> Free A B:2 bytes C:3 bytes D:4 bytes No place for D ! merge!! Buddy is free Buddy —> neighbour with same size 1550008 bytes001010011100101110111
+Free Space ManagementBuddy allocation A:1 byte —> Free A B:2 bytes C:3 bytes D:4 bytes Now we have place for D ! 
+1560008 bytes001010011100101110111Paging Principle Chapter 18Back to segmentation first Code, Heap, Stack are variable size segments that require contiguous blocks of memory.  Avoiding external fragmentation remains challenging We need a different approach
+157Paging PrincipleNew approach called paging Instead of variable-sized logical segments, the program views its virtual memory as fixed-sized units called pages The physical memory is also viewed as an array of fixed-sized slots (blocks) called page frames A page frame can contain a page 158Paging Principle64 bytes in total Page size is 16 bytes Virtual pages 0,1,2,3 
+159page 0page 1page 2page 3016324864A 64-byte virtual address spacePaging PrincipleSimple - Find a free page and use it - Free space management becomes easier - No assumption on heap and stack 
+160page 0page 1page 2page 3016324864A 64-byte virtual address spaceOSpage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7We read:The content of virtual page 0 is located in physical page frame 3Paging PrincipleOS Responsibility Keep a per process mapping: Virtual Page (VP)—>Page Frame (PF)   
+161page 0page 1page 2page 3016324864A 64-byte virtual address spaceOSpage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7Paging PrincipleOS Responsibility Keep a per process mapping, for example: Page Table VP0—>PF3 VP1—>PF7 VP2—>PF5 VP3—>PF2 
+162page 0page 1page 2page 3016324864A 64-byte virtual address spaceOSpage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7Paging PrincipleAddress translation   
+163page 0page 1page 2page 3016324864A 64-byte virtual address spacePaging PrincipleAddress translation •64 (virtual address locations)= 2^6, we need 6 bits.   
+164page 0page 1page 2page 3016324864A 64-byte virtual address spacePaging PrincipleAddress translation •64 (virtual address locations)= 2^6, we need 6 bits. •We have 64/16=4 pages, i.e.,2^2, we need 2 bits to locate all the pages.   
+165page 0page 1page 2page 3016324864A 64-byte virtual address spacePaging PrincipleAddress translation •64 (virtual address locations)= 2^6, we need 6 bits. •We have 64/16=4 pages, i.e.,2^2, we need 2 bits to locate all the pages. •We have 16=2^4 locations per page, we need 4 bits to locate every address in a page.  
+166page 0page 1page 2page 3016324864A 64-byte virtual address spacePaging PrincipleAddress translation •64 (virtual address locations)= 2^6, we need 6 bits. •We have 64/16=4 pages, i.e.,2^2, we need 2 bits to locate all the pages. •We have 16=2^4 locations per page, we need 4 bits to locate every address in a page.  
+167page 0page 1page 2page 3016324864A 64-byte virtual address spaceCheck The count is good 2 bits to address the pages and 4 bits to address within a page. 2+4=6 bits, 2^6=64 64 the size of our address space, good! Paging PrincipleAddress translation •64 (virtual address locations)= 2^6, we need 6 bits. •We have 64/16=4 pages, i.e.,2^2, we need 2 bits to locate all the pages. •We have 16=2^4 locations per page, we need 4 bits to locate every address in a page.  
+168page 0page 1page 2page 3016324864A 64-byte virtual address space
+Paging PrincipleExample Translate address 21(decimal)=bx010101 
+169page 0page 1page 2page 3016324864A 64-byte virtual address space
+Page=1 (01) offset=5 (0101) Paging PrincipleExample Translate address 21(decimal)=bx010101 
+170page 0page 1page 2page 3016324864A 64-byte virtual address space
+Page=1 (01) offset=5 (0101) Paging PrincipleExample Translate address 21(decimal)=bx010101 From the page table we have VP1—>PF7 (111) Note that the offset is the same. We only need to map VP—>PF 
+171page 0page 1page 2page 3016324864A 64-byte virtual address space
+Paging PrincipleExample VA=21(bx010101) —> PA 117 (bx1110101) 
+172
+OSpage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7Paging PrincipleMMU Inputs: VA and page table (PT) Outputs: Physical address 
+173
+CPUMMUVAPTPAPaging PrincipleMMU VA is part of the running program will be in a CPU register. PA will go to the address bus  But where to keep the Page Table (PT)? 
+174CPUMMUVAPTPAPaging PrincipleExample 32 bit VA space -> 2^32= 4GB address locations.   
+175CPUMMUVAPTPA  Paging PrincipleExample 32 bit VA space -> 2^32= 4GB address locations. Say a page size is 4KB —>2^12 locations within a page.   
+176CPUMMUVAPTPAPaging PrincipleExample 32 bit VA space -> 2^32= 4GB address locations. Say a page size is 4KB —>2^12 locations within a page. This means: VPN —> 20 bits offset—>12 bits 
+177CPUMMUVAPTPAPaging PrincipleExample 32 bit VA space -> 2^32= 4GB address locations. Say a page size is 4KB —>2^12 locations within a page. This means: VPN —> 20 bits offset—>12 bits The number pages per process in the page Table will be:  
+178CPUMMUVAPTPA2^20=1048567 pages per process   Paging PrincipleExample 32 bit VA space -> 2^32= 4GB address locations. Say a page size is 4KB —>2^12 locations within a page. This means: VPN —> 20 bits offset—>12 bits The number pages per process in the page Table will be:  
+179CPUMMUVAPTPA2^20=1048567 pages per process Now assume that every table entry is 4 bytes. We will need 4 MB per process. 400MB with 100 process, just for page tables.  No on-chip hardware for this!! Paging PrincipleThe page table can get so big that is has to be stored in memory. So how to we do?   
+180CPUMMUVAPTPAPaging PrincipleThe page table can get so big that is has to be stored in memory. We put the page table in memory, and let the OS inform the MMU where the page table address in the physical memory is.  
+181CPUMMUVAPTAddrPAPaging PrincipleLets fetch VA=21 which corresponds to 117 in PA.  Assume that the OS has put our page table in the physical memory, and instructed the MMU about the address of PTAddr. 
+182CPUMMUVAPTAddrPAOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrPaging PrincipleLets fetch VA=21 which corresponds to 117 in PA. We know how get the VPN. In this case 01. 
+183CPUMMUVAPTAddrPAOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddr
+Paging PrincipleLets fetch VA=21 which corresponds to 117 in PA. Now we have to read from memory location PTAddr + VPN to get the corresponding PF (page frame) 
+184CPUMMUVAPTAddrPAOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddr
+Lets fetch VA=21 which corresponds to 117 in PA. We should get PF=7. Now we can translate from VA to PA! Just like we did before. Paging Principle
+185CPUMMUVAPTAddrPAOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddr
+Paging Principle
+186page 0page 1page 2page 3016324864A 64-byte virtual address space
+Lets fetch VA=21 which corresponds to 117 in PA. We should get PF=7. Now we can translate from VA to PA ! Paging Principle
+187Lets fetch VA=21 which corresponds to 117 in PA. We should get PF=7. Try this. Find PA 
+Paging Principle
+188So For every memory reference (program access), paging requires one extra memory access. It has to fetch the entry in the page table, and then use that entry access memory for what the program needs.  This slows things down! Paging Principle
+189A Step Back What is Actually in the Page Table? VPN: is just used to index the table entry, not part of the table entry. PFN: is what we have needed so far G: About caching… PAT: About caching… D: Has page frame been modified since loaded? A: Has the page frame been accessed? PCD: About caching… PWT: About caching… U/S: Can user access? R/W: Is write allowed? P: Is page frame present in memory? 
+Paging Principle
+190Paging Principle
+191Paging TLB Chapter 19Storing the page table in memory requires an extra memory lookup for every memory access. 1. Lookup the PF(Page Frame) given PTAddr (Page table address). 2. The MMU translates VA(Virtual Address) to PA, only then PA (Physical Address) is accessed. How to speed up?192Paging TLBHow to speed up? What HW is required? What must the OS do? 
+193Paging TLBTranslation-Lookaside Buffer  Could be called Address Translation Cache
+194Paging TLBPrinciple For every virtual memory reference(access): MMU checked if VP—>PF is in TLB 1.- If so, use the entry for translation 2.- Otherwise, consult page table in memory (Cache miss) 1.- Then if valid and not protected  1.- Insert in TLB
+195Paging TLBAlgorithm
+196
+Extract VPNTLB_Lookup(VPN)Success?CanAccess?Extract Physical AddressAccessMemory (PhysicalAddress)PhysicalAddressYesYes (TLB Hit)TlbEntryVPNSuccess, TlbEntryTLB MissAccessMemory (PTEAddr)Compute PTEAddr
+Valid?PTE
+Protection FaultSegmentation FaultTLB_Insert(VPN, PTE.PFN)CanAccess?YesYesNoNoNo
+Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+197VPNOFFSETVIRTUAL ADDRESS0
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrIS VPN in TLB?  Yes! Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+198VPNOFFSETVIRTUAL ADDRESS0
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrCan we use it? protected? Valid? Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+199VPNOFFSETVIRTUAL ADDRESS0
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrWe can use it ! Translate to physical address Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+200VPNOFFSETVIRTUAL ADDRESS3
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrIS VPN in TLB?  No! Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+201VPNOFFSETVIRTUAL ADDRESS3
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrIS VPN in TLB?  TLB Miss! Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+202VPNOFFSETVIRTUAL ADDRESS3
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrWe have to get it from PTAddr + VPN Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+203VPNOFFSETVIRTUAL ADDRESS32VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrCan we use it? R/W? Valid?  PFNValid11R/WPaging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+204VPNOFFSETVIRTUAL ADDRESS32VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrCan we use it? Yes!!  PFNValid11R/WPaging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+205VPNOFFSETVIRTUAL ADDRESS3
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrDo Translation to find physical address Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+206VPNOFFSETVIRTUAL ADDRESS3
+VPNPFN013732TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrAdd PFN to TLB OR? Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+207VPNOFFSETVIRTUAL ADDRESS3
+VPNPFN0137TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrReplace an existing. Replacement policy Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? What is needed? 
+208VPNOFFSETVIRTUAL ADDRESS3
+VPNPFN3127TLBOSPage Tablepage 3page 0page frame 0page frame 1page frame 2page frame 3016324864A 128-byte physical address space
+80page 296112page 1128page frame 4page frame 5page frame 6page frame 7PTAddrPaging TLBStudy the example from the book Section 19.2 Observations TLB improves with spatial locality Consider looping over an array: If a TLB miss happens the TLB will be updated and the loop will continue fast. This is because a miss leads to updating the TLB with the missing page. So in a loop the next page size accesses will be found in TLB (hits).209Paging TLBExample from the book Section 19.2 Observations TLB improves with Temporal Locality If we just accessed a VP, it is likely that it is still in TLB
+210Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? Think about how this can done 
+211Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? Think about how this can done 
+212Paging TLBWhen A TLB Miss happens, who handles it? If it is the HW. Than the HW has to know where to find the page tables in memory. The OS has just to update a so-called  page-table base register 
+213Paging TLBWhen A TLB Miss happens, who handles it? If it is the HW. Than the HW has to know where to find the page tables in memory. The OS has just to update a so-called  page-table base register This solution is from the past 214Paging TLBWhen A TLB Miss happens, who handles it? If it is the SW. On a miss the HW raises an exception (interrupt). This causes a jump to trap handler (OS job). The code will lookup the missed page and updates the TLB using privileged instructions.  This is a similar procedure as other interrupts, except for two things. What are they? 215Paging TLBWhen A TLB Miss happens, who handles it? If it is the SW. On a miss the HW raises an exception (interrupt). This causes a jump to trap handler (OS job). The code will lookup the missed page and updates the TLB using privileged instructions.  This is a similar procedure as other interrupts, except for two things. 1. Execution must resume from the instruction that caused the trap, not the next one as with usual return from trap. 216Paging TLBWhen A TLB Miss happens, who handles it? If it is the SW. On a miss the HW raises an exception (interrupt). This causes a jump to trap handler (OS job). The code will lookup the missed page and updates the TLB using privileged instructions.  This is a similar procedure as other interrupts, except for two things. 2. Avoid infinite TLB misses caused by the TLB handler itself. (Unclear, Not syllabus) 217Paging TLBWhen A TLB Miss happens, who handles it? HW or OS? OS approach is more flexible about how to deal with TLB misses. 
+218Paging TLBTLB Content TLB Entry: VPN | PFN | Other bits Other bits: Valid bit: stands for not populated (Typically on boot) or not to be used (on context switch, when another process is about to run, it should not use TLB Entries of previous one) Read ASIDE page 206. We should not confuse TLB valid bit with Page Table Valid Bit from page 190 which stands not allocated and thus no data in physical addresses 219Paging TLBTLB Content TLB Entry: VPN | PFN | Other bits Other bits: Protected bit: To mark a page as read and execute, typically code, or read/write for heap.  
+220Paging TLBTLB Content TLB Entry: VPN | PFN | Other bits Other bits: Address space identifier: See it as Process ID 
+221Paging TLBTLB Content TLB Entry: VPN | PFN | Other bits Other bits: Dirty bit: To mark that a page has been written to. 
+222Paging TLBTLB Issue: Context Switch 
+223
+What is wrong here?Paging TLBTLB Issue: Context Switch When switching between process The HW and OS must ensure that the next process does not use page translations of the previously running process. 
+224
+MUST avoid this situation Paging TLBTLB Issue: Context Switch When switching between process The HW and OS must ensure that the next process does not use page translations of the previously running process. Naive solution Clear on context switch and set all valid bits to 0. Problem Each time a process is scheduled it will have to live with TLB misses again before filling the TLB 225Paging TLB
+226
+TLB Issue: Context Switch When switching between process The HW and OS bus ensure that the next process does not use page translations of the previously running process. HW Support Solution Use ASID (PID) to distinguish TLB of processes A process can only access translations corresponding to their ASID Paging TLB
+227
+TLB Issue: Replacement Policy Caches are small, we will often need to replace entries. But which ones to replace? Goal: Minimize miss rate (Maximise hit rate) Candidate solutions - Least-recently-used, but where is this information? - Random replacement, just pick one Paging TLB
+228A Real TLB Entry from MIPS architecture (belongs to RISC) Lookup the meaning of MIPS and RISC VPN=19 bits PFN=24 bits 4 KB page size we need 12 bits offset (Not part of the entry) VA space  MIPS can support  ASID 8 bits: 256 processes can remain in TLB across context switches G: global share among all processes, C: (out of scope), V for valid, D for Dirty. 219+12=231=2GB224+12=236=64GB
+Paging TLB
+229Summary •TLB is here to speed up memory access •When a page is not in TLB a miss occurs, but then the TLB is updated •TLB miss can be handled by OS or HW, but OS offers more flexible •The OS must be extra careful on context switch because a miss means that the instruction must re-run •Other bits are here to make context switch more efficient, typically ASID •A Replacement Policy is needed  Question: How should you write your program in order to cause many TLB misses? :-)   Paging TLB
+230Problems with TLB •Accessing memory at random can cause problems •When TLB coverage isn’t met, things become significantly slower…  TLB coverage: when in a program access a number of pages greater than what TLB can hold. Many misses will happen. Next Chapter smaller tables   Paging Smaller Tables Chapter 20Because TLB are limited in size it cannot always cover the whole page table content. TLB misses will happen!! 
+231Paging Smaller TablesBecause TLB are limited in size it cannot always cover the whole page table content. TLB misses will happen!! But what if ?
+232Paging Smaller TablesBecause TLB are limited in size it cannot always cover the whole page table content. TLB misses will happen!! But what if ? Solution 1 Let the page size be big—>Smaller page table
+233Paging Smaller TablesBecause TLB are limited in size it cannot always cover the whole page table content. TLB are doomed to happen!! But what if ? Solution 1 Let the page size be big—>Smaller page table Solution 2 ? Solution 3 ? Solution 4 ?234Paging Smaller TablesSolution 1 Let the page size be big—>Smaller page table Example: - 32 bit address space - 16KB page size  - VPN= 18 bits, Offset 14 bit This means 2^18 locations(indices) in page table, with 4 bytes per PTE (page table entry) we have 1 MB per page table. In contrast a 4 KB page size requires 4 MB per page table.  16 KB page size leads to 4 times smaller table than 4KB page size.  235Paging Smaller TablesSolution 1 Let the page size be big—>Smaller page table 1MB per page table is better than 4MB, less pages, less TLB misses. But what is the disadvantage?  
+236Paging Smaller TablesSolution 1 Let the page size be big—>Smaller page table 1MB per page table is better than 4MB, less pages, less TLB misses. But what is the disadvantage?  
+237Paging Smaller TablesSolution 1 Let the page size be big—>Smaller page table 1MB per page table is better than 4MB, less pages, less TLB misses. But what is the disadvantage?  Internal fragmentation again! 
+238Paging Smaller TablesSolution 1 Let the page size be big—>Smaller page table 1MB per page table is better than 4MB, less pages, less TLB misses. But what is the disadvantage?  Internal fragmentation again! Scenario A process needs only 1KB.  The OS can only allocated 16KB page size at the time. This means that 15KB will be allocated and unused ! 239Paging Smaller TablesSolution 1 Let the page size be big—>Smaller page table So far we have considered the page table as linear table. 
+240Physical memoryPage Table of process nPTAddress
+VPN=xVPN=y……Paging Smaller TablesSolution 1 Let the page size be big—>Smaller page table So far we have considered the page table as linear table. 
+241Notice how many not valid pages! but still part of the page table Physical memoryPage Table of process nPTAddress
+VPN=xVPN=y……Paging Smaller TablesSolution 2 Why all these empty entries in the page table when we know that a process consists of code, stack and heap? What does it remind us? 
+242Paging Smaller TablesSolution 2 Why all these empty entries in the page table when we know that a process consists of code, stack and heap? What does it remind us? Segmentation again:-) 
+243Paging Smaller TablesSolution 2 Why all these empty entries in the page table when we know that a process consists of code, stack and heap? What does it remind us? Segmentation again:-) But this time a segment stands for a page table for a segment. So we will have 3 page tables of small sizes per process heap, stack, and code. 244Paging Smaller TablesSolution 2 Why all these empty entries in the page table when we know that a process consists of code, stack and heap? What does it remind us? Segmentation again:-) But this time a segment stands for a page table for a segment. So we will have 3 page tables of small sizes per process heap, stack, and code. The difference this time is that segmentation is used to store VPN mapping to PFN, while in previous segmentation we had VA mapping to PA. 245Paging Smaller TablesSolution 2 Hybrid: segment for page tables, and paging for page frames (fixed size pages). 
+246
+Each process has base and bound for three segments. The OS has to restore the registers on context switch. Paging Smaller TablesSolution 2 Hybrid: segment for page tables, and paging for page frames (fixed size pages). Seems like a good idea but what is the disadvantage of this approach? 
+247Paging Smaller TablesSolution 2 Hybrid: segment for page tables, and paging for page frames (fixed size pages). Seams like a good idea but what is the disadvantage of this approach? External fragmentation again! 
+248Paging Smaller TablesSolution 2 Hybrid: segment for page tables, and paging for page frames (fixed size pages). Seams like a good idea but what is the disadvantage of this approach? External fragmentation again! Not enough available contiguous space for the page table 
+249Paging Smaller TablesSolution 3 Attack the same problem of solution 2, i.e, get rid of the empty places in the linear page table, but uses a different approach. 
+250Physical memoryPage Table of process nPTAddress
+VPN=xVPN=y……Paging Smaller TablesSolution 3 Multi-level Page Table. 
+251
+Paging Smaller TablesSolution 3 Multi-level Page Table. 
+252
+2 Levels ExamplePaging Smaller TablesSolution 3 Procedure for 2 levels: 
+253
+Paging Smaller TablesSolution 3 Multi-level Page Table. 
+2543 Levels Example
+Paging Smaller TablesSolution 3 Multi-level Page Table. Disadvantages? 
+255Paging Smaller TablesSolution 3 Multi-level Page Table. Disadvantages? Cost of PTB miss increases with the the level of page tables! 
+256Paging Smaller TablesSolution 4 Inverted Page Tables Let us discuss this (section 20.4) What is it going to solve? 
+257Paging Smaller TablesSummary We don’t like the linear page table because it can have many unused entries. - Bigger pages is not a good solution because of internal fragmentation - using segmentation to store 3 page tables per process is called hybrid approach, seems good but suffers external fragmentation. - Multi-level table is space saving, but can be costly on TLB miss - Inverted table requires the maintenance of hash table.  258Beyond physical memory: Mechanisms 
+259Chapter 21 Beyond physical memory: MechanismsSo far we have assumed that every address space of every running process fits in memory.  
+260Beyond physical memory: MechanismsSo far we have assumed that every address space of every running process fits in memory.  We now relax this assumption Memory can get filled up and some space address spaces have to be moved to a slower and larger storage (disk). 
+261Beyond physical memory: MechanismsSo far we have assumed that every address space of every running process fits in memory.  We now relax this assumption Memory can get filled up and some space address spaces have to be moved to a slower and larger storage (disk). So how can the OS give processes the illusion of having a large address space in memory when it is actually in the disk (Transparency)? 262Beyond physical memory: MechanismsMemory Access TLB-> hit (we are fine) TLB-> miss (we go to PT) PT-> hit (we are fine) PT->miss(we swap to disk) This is much slower 
+263Beyond physical memory: MechanismsOS must know where to read from the disk When a page is in memory it has PFN When a page is on disk it has a Block (on disk) The difference is in the present bit present bit=1—> in physical memory present bit =0 —> in disk 
+264
+Beyond physical memory: Mechanisms
+265
+VPN translationTLB HitBeyond physical memory: Mechanisms
+266
+VPN translationTLB HitFind PTE in memory because it is not in TLBBeyond physical memory: Mechanisms
+267
+VPN translationTLB HitFind PTE in memory because it is not in TLBPage not present in memory, we have to get it from diskPage-fault handler, if no free place in memory we have to evict a page ﬁrst. Read disk block as given by PTE.DiskAddr, an update present bit and PFNBeyond physical memory: Mechanisms
+268
+Page-fault handler, if no free place in memory we have to evict a page ﬁrst. Read disk block as given by PTE.DiskAddr, an update present bit and PFNWhat happens when reading from disk? Beyond physical memory: Mechanisms
+269
+Page-fault handler, if no free place in memory we have to evict a page ﬁrst. Read disk block as given by PTE.DiskAddr, an update present bit and PFNWhat happens when reading from disk? Blocked State Beyond physical memory: Mechanisms
+270
+Page-fault handler, if no free place in memory we have to evict a page ﬁrst. Read disk block as given by PTE.DiskAddr, an update present bit and PFNWhat happens when the Memory is filled? Beyond physical memory: Mechanisms
+271
+Page-fault handler, if no free place in memory we have to evict a page ﬁrst. Read disk block as given by PTE.DiskAddr, an update present bit and PFNWhat happens when the Memory is filled? Replacement Policy (more in next chapter) Beyond physical memory: Mechanisms
+272What happens when the Memory is filled? Replacement Policy For now the OS runs a background process which does: •Low Watermark (LW) and High Watermark (HW) for free pages •When few free pages (<LW) evict •When many free pages (>HW) sleep Beyond physical memory: Mechanisms
+273Summary When a page is not in memory we have to bring it from disk in a transparent manner. This operation is done by the page-fault-handler and is much slower than memory access.  Page eviction is needed when few free pages are available. This is done by a replacement policy that will page in and page out.  Beyond physical memory: Policies Chapter 22When there is not enough space in memory. how does the OS decide which page to evict? 
+274Beyond physical memory: PoliciesWhen there is not enough space in memory. how does the OS decide which page to evict? We need a policy for choosing!
+275Beyond physical memory: PoliciesWhen there is not enough space in memory. how does the OS decide which page to evict? We need a policy for choosing! And We need to know how to measure the quality of that policy276Beyond physical memory: PoliciesWhen there is not enough space in memory. how does the OS decide which page to evict? We need a policy for choosing! And We need to know how to measure the quality of that policy The best solution is the one that maximises the hit rates, NB! Memory is like a cache for disk, just like TLB is a cache for memory277Beyond physical memory: PoliciesAverage Memory Access Time (AMAT)
+278Average memory access time (AMAT):
+	 AMAT 	 = TM + (Pmiss * TD)
+	TM 	 = cost of accessing memory
+	TD 	 = cost of accessing disk
+	Pmiss 	 = probability of not ﬁnding the data in cache
+Note: always pay cost of accessing data in memory (TM).
+Assume TM = 100 ns, TD = 10 ms, Pmiss = 10% = 0.1Exercise what is the AMAT: Beyond physical memory: PoliciesAverage Memory Access Time (AMAT)
+279Average memory access time (AMAT):
+	 AMAT 	 = TM + (Pmiss * TD)
+	TM 	 = cost of accessing memory
+	TD 	 = cost of accessing disk
+	Pmiss 	 = probability of not ﬁnding the data in cache
+Note: always pay cost of accessing data in memory (TM).
+Exercise 1 what is the AMAT: Assume TM = 100 ns, TD = 10 ms, Pmiss = 10% = 0.1AMAT = 100 ns + (0.1 * 10 ms) = 100 ns + 1 ms  = 1.0001 ms ≈ 1 ms
+Answer 1: Beyond physical memory: PoliciesAverage Memory Access Time (AMAT)
+280Average memory access time (AMAT):
+	 AMAT 	 = TM + (Pmiss * TD)
+	TM 	 = cost of accessing memory
+	TD 	 = cost of accessing disk
+	Pmiss 	 = probability of not ﬁnding the data in cache
+Note: always pay cost of accessing data in memory (TM).
+Assume TM = 100 ns, TD = 10 ms, If the hit rate 99.9 %: Pmiss = 0.001Exercise 2 what is the AMAT: Beyond physical memory: PoliciesAverage Memory Access Time (AMAT)
+281Average memory access time (AMAT):
+	 AMAT 	 = TM + (Pmiss * TD)
+	TM 	 = cost of accessing memory
+	TD 	 = cost of accessing disk
+	Pmiss 	 = probability of not ﬁnding the data in cache
+Note: always pay cost of accessing data in memory (TM).
+Assume TM = 100 ns, TD = 10 ms, If the hit rate 99.9 %: Pmiss = 0.001Exercise 2 what is the AMAT: AMAT = 100 ns + 0.001*10 ms = 100 ns + 0.01 ms = 10.1 microseconds
+100x faster: with near 100 % hit rate: AMAT approaches 100 nsAnswer 2: Beyond physical memory: PoliciesFurtherest in the future has been shown (Belady) to be the optimum policy. The policy simply says: Replace the page that will be used the furtherest in the future.
+282
+Example.  Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1
+-Beyond physical memory: PoliciesFurtherest in the future has been shown (Belady) to be the optimum policy. The policy simply says: Replace the page that will be used the furtherest in the future.
+283
+Example.  Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1Hit rate for the cache:
+	 Hit rate = Hits / (Hits+Misses)
+Hit rate =6/(6+5)=54.5%Hit rate modulo compulsory misses:
+	 Hit rate = Hits / (Hits+Misses-#Pages)
+Hit rate=6/(6+5-4)=5/7=85.5%
+Beyond physical memory: PoliciesFIFO
+284Example.  Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1
+Hit rate for the cache ?:
+	Hit rate modulo compulsory misses?:
+	
+Fill the rest of the tableBeyond physical memory: PoliciesFIFO
+285Example.  Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1
+Hit rate for the cache:
+	 Hit rate = Hits / (Hits+Misses)
+Hit rate =4/(4+7)=36.4%Hit rate modulo compulsory misses:
+	 Hit rate = Hits / (Hits+Misses-#Pages)
+Hit rate=4/(4+7-4)=4/7=57.1%
+Beyond physical memory: PoliciesFIFO
+286Cache Size = 3Cache Size = 4AccessHit/Miss?EvictCache StateAccessHit/Miss?EvictCache State1Miss11Miss12Miss1,22Miss1,23Miss1,2,33Miss1,2,34Miss12,3,44Miss1,2,3,41Miss23,4,11Hit1,2,3,42Miss34,1,22Hit1,2,3,45Miss41,2,55Miss12,3,4,51Hit1,2,51Miss23,4,5,12Hit1,2,52Miss34,5,1,23Miss12,5,33Miss45,1,2,34Miss25,3,44Miss51,2,3,45Hit5,3,45Miss12,3,4,5Aside: Belady’s Anomaly In general: expect cache hit rate to increase (get better) when caches gets larger.
+Example. Memory-reference stream: 
+1, 2, 3, 4, 1, 2, 5, 1, 3, 4, 5.
+With cache size 3 pages:
+	 Hit rate = 3 / (3+9) = 25 %
+With cache size 4 pages:
+	 Hit rate = 2 / (2+10) = 16.7 %
+FIFO may sometimes get worst with larger cache sizes.
+Beyond physical memory: PoliciesLeast Recent Used (LRU) Rely on Principle of Locality A page that was recently accessed is likely to be accessed again
+287Beyond physical memory: PoliciesLRU
+288Example.  Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1Hit rate for the cache ?:
+	Hit rate modulo compulsory misses?:
+	
+Fill the rest of the tableBeyond physical memory: PoliciesLRU
+289Example.  Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1Hit rate for the cache ?:
+	 Hit rate = Hits / (Hits+Misses)
+Hit rate =6/(6+5)=54.5%Hit rate modulo compulsory misses?:
+	 Hit rate = Hits / (Hits+Misses-#Pages)
+Hit rate=6/(6+5-4)=5/7=85.5%Same as the optimum for THIS Scenario!Beyond physical memory: PoliciesWorkloads
+290Work Load 100 pages to access Vary the cache size Total 10000 accesses  Random
+Beyond physical memory: PoliciesWorkloads
+291Workload 100 pages to access Vary the cache size Total 10000 accesses  80% of accesses are made to 20% of pages. 20% accesses are made to 80% of pages
+Beyond physical memory: PoliciesWorkloads
+292Workload Refer to 0,1,2…49 and loop over again and again 10 000 accesses Vary the cache size 
+Beyond physical memory: PoliciesImplementing a perfect LRU is challenging. It would require maintaining a data structure with records about access time for every page access that happens.  
+293Beyond physical memory: PoliciesLRU approximation 
+294Clock Algorithm:
+-Arrange all pages in a circular list 
+-A “clock hand” points to some page P 
+-When a replacement must occur
+-CheckUseBit:
+-OS checks if P’s use bit is 0 or 1.
+-If use bit == 1: implies that P was recently used
+-(Not a good candidate for replacement)
+-Clear P’s use bit.
+-Advance clock hand to P+1.
+-GOTO CheckUseBit
+-If use bit == 0: implies that P has not recently been used (or we have searched all pages, and all are used)
+-Replace page P.
+Beyond physical memory: PoliciesOther approaches Dirty bit: tells that a page has been modified and thus not the same as in disk. To evict a dirty page we have first to write it back to disk (because it has changed). This is expensive.  That is why it is better to evict not dirty pages because they are the same on disk, we don’t need to do more than remove them from memory (no disk operation is required)  
+295Beyond physical memory: Policies
+296Other VM Policies Page selection policy:  OS must decide when to bring page into memory. Two approaches:  -Demand paging:  -OS brings in a page when it is accessed (on demand) -This means that if the page is not present in PM,  we will take a page fault and load the page from SS. -Prefetching:  -If OS already fetching page P, it may be likely that page P+1 will be needed next. -Should only be done if there is a reasonable chance of success…Beyond physical memory: Policies
+297Policies for writing pages out to disk: -One-at-a-time:  -Does what you expect, write one page from PM to disk at a time -Grouping:  -Grouping multiple writes into one is more effective because of the nature of disk drives (also called batching or clustering) Beyond physical memory: Policies
+298Thrashing Q: What should OS do when memory is oversubscribed? Def. Oversubscribed (for the memory case) the memory demands of the set of running processes exceeds the available PM. System will constantly be paging: condition is called thrashing Def. Working set: set of pages a process is actively using Admission control:  -Reduce the set of processes that gets to run -Hope the remaining processes’s working set fit in memory  -Beyond physical memory: Policies
+299Linux approach to memory overload: Out-of-memory (OOM) killer: -Daemon chooses a memory-intensive process and kills it! -Problem: -If daemon kills the X server — the program that renders stuff on the screen… Beyond physical memory: Policies
+300Summary Modern page replacement algorithms: -Try to support LRU approximations (like clock algorithm) -Scan-resistant:  -Avoid worst-case behavior of LRU,  e.g., for the looping-sequential workload Importance of page replacement algorithms has decreased -Discrepancy between memory-access and disk-access times has increased -Cost of frequent paging: prohibitive Best solution: buy more memory! Beyond physical memory: CVMSWe postpone this part and comeback to it later
+301Questions
+302

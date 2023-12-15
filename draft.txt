@@ -1,0 +1,12 @@
+# =>What is a process?
+&> A process is an instance of a computer program that is being executed by a computer system. It is a fundamental concept in operating systems and represents the execution of a set of instructions within a computer's memory. Each process has its own memory space, resources, and execution state, which includes the program counter indicating the next instruction to be executed. Processes can run concurrently, meaning multiple processes can be executed simultaneously by the operating system, which allocates resources and manages their execution.
+  
+# =>4:What is a process?
+&> A process is a program in execution. It is more than the program code as it includes the program counter, process stack, registers, and program data. A process can be thought of as an instance of a program in execution. Each process has its own system resources and memory space. The operating system manages these processes, allocating resources as needed and terminating processes that have completed or crashed.
+
+
+# =>What is an operating system? Explain with one sentence.
+&> An operating system is a software that manages computer hardware and software resources and provides common services for computer programs.
+
+#  {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+

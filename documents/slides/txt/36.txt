@@ -1,0 +1,49 @@
+I/O Devices (Chapter 36)How should I/O be integrated into systems?  What are the general mechanisms? How can we make them efficient? 
+1I/O Devices (Chapter 36)36.1 System Architecture (Generic prototype) 
+2
+PCI: Peripheral Component Interconnect SCSI: Small computer System Interface  SATA: Serial Advanced Technology Attachment  USB: Universal Serial Bus I/O Devices (Chapter 36)36.1 System Architecture Intel’s Z270 Chipset 
+3PCIe: Peripheral Component Interconnect Express eSATA: Express Serial Advanced Technology Attachment  USB: Universal Serial Bus 
+I/O Devices (Chapter 36)36.2 A Canonical IO Device 
+4
+Interface: What the device exposes  Internal: Device specific hardware and software I/O Devices (Chapter 36)36.2 A Canonical IO Device 
+5
+Story: •A program p1 wants to send sound to a speaker I/O Devices (Chapter 36)36.2 A Canonical IO Device 
+6
+Story: •A program p1 wants to send sound to a speaker •p1 issues a system call •the system call handler traps in the os •the os calls that procedure that knows how to communicate with the speaker •How to communicate with the devices comes later 36.6/7 I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+7
+I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+8
+What is wrong with this approach ?I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+9
+Polling for Ready (CPU)I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+10
+Writing  (CPU)I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+11
+Polling again  (CPU)I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+12
+Go to sleep and continue laterI/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+13
+Without interrupt busy spinning
+I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+14
+With interrupt another process can use the CPU
+I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+15
+However,  if the device is fast, then no need to go to sleep and wait for interrupt I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+16
+However,  if the device is fast sometimes, spin sometime and then go to sleep I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+17
+Issue,  When many requests (Stream of IO), many interrupts will cause a “livelock” all time goes to processing interrupts I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+18
+Issue,  When many requests (Stream of IO), many interrupts will cause a “livelock” all time goes to processing interrupts I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+19
+Trick,  The device waits a while before sending interrupt signal to inform that it is done “coalescing” several “done” into one.  I/O Devices (Chapter 36)36.5 Direct Memory Access (DMA) 
+20
+Problem,  writing large chunk of data is still a CPU task. Must copy the data from memory to the device one word at the time “not good” I/O Devices (Chapter 36)36.5 Direct Memory Access (DMA) 
+21Problem,  writing large chunk of data is still a CPU task. Must copy the data from memory to the device one word at the time “not good” 
+I/O Devices (Chapter 36)36.5 Direct Memory Access (DMA) 
+22Solution,  OS (via a system call) tells DMA where the data is in memory, and how much to copy to which device. The device issues an interrupt when done.   
+I/O Devices (Chapter 36)36.6 Methods of Device Interaction Basically how CPU interacts with devices I/O instructions:  uses dedicated commands to communicate with devices Memory mapped I/O: uses memory operations to communicate with devices  
+23I/O Devices (Chapter 36)36.6 Methods of Device Interaction Basically how CPU interacts with devices Explicit privileged I/O instructions: for example “in” “out” and port (device) Memory mapped I/O: device registers are seen as memory locations. Load (read) or Store (write) to those locations. The hardware routes that to the device and not to memory 24I/O Devices (Chapter 36)36.7 The Device Driver  An abstraction make life easier for the OS, but dealing with the device details 
+25
+I/O Devices (Chapter 36)36.10 Summary  •About how OS interacts with a device •Two techniques for device efficiency: Interrupt and DMA •Interrupt makes sense when device is slow •DMA makes sense for large data chunks copying   •Two techniques for the cpu to access devices: explicit I/O instructions or memory-mapped I/O •Device drivers to make it easier for the os to build os in a device neutral fashion.  26

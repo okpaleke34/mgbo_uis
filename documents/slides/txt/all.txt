@@ -1,0 +1,2513 @@
+Chapter 2 Introduction to Operating Systems Why study OS? -Nice to know “how stuﬀ works”
+-Some conceptually interesting and beautiful ideas in OS
+-First steps towards real understanding of data centres and other systems
+-Quick reminder of how a computer works:
+https://cpuvisualsimulator.github.io/
+https://www.vnmsim.app/en-us
+What happens when a program runs? -Load program from disk -> memory
+-Processor executes instructions (run)—That the CPU can understand “Instruction set architecture (ISA)”
+-Fetch instruction from memory
+-Decode instruction to ﬁgure out which instruction it is
+-Execute the thing the instruction is supposed to do
+-Instructions: 
+-Add two numbers: ADD #5, D1
+-Access memory (LOAD / STORE)
+-Comparison: check condition: CMP #0, D0
+-Jump to function instructions 
+-Move to next instruction
+-Does this process many billions of times per second
+-Until program completes
+Life cycle of a program. This computing model is often called von Nuemann’s model of computing.
+ 
+What is the purpose of the OS? -Make it easy to run programs
+-Share the processor 
+-Interact with devices
+-Allow programs to share memory
+The OS must operate correctly and eﬃciently.
+Virtualization OS achieve these goals with a general technique: Virtualization
+-Take physical resource (CPU, memory, disk …)
+-Transform this resource into a more general and easy-to-use virtual form.
+Virtual computer (or machine)
+-1 CPU -> Many CPUs — because we can then run multiple programs at the same time (seemingly)
+-1 Memory -> Many programs appear to have large private memories 
+-CPU: Switch between many programs (time sharing)
+-Memory: divide memory between many programs (space sharing)
+Standard library -Typically an OS exports or provides a few hundred system calls.
+-Also called: Application Programming Interface (API)
+-Examples: Open(), Read(), Write(), Close()
+-Make system easy to use
+OS role as a resource manager -Scheduling: OS must manage access to the CPU
+-Similar for memory (sharing memory) and disk (sharing storage space)
+-Must be managed
+-Fairly -  can’t let one program consume whole CPU, when other programs don’t get any CPU
+-Eﬃciently - can’t cause excess overhead
+-Securely - must protect memory of other programs (isolation); avoid programs harm each other, including harming the OS.
+-Reliable - must run non-stop; if it fails, all applications fail as well!!
+Design Goals Abstractions are fundamental to everything in computer science -Abstractions makes it possible to write a large program by dividing it into small and understandable chunks…
+Examples: 
+-to write such a program in a high-level language like C without thinking about assembly
+-to write code in assembly without thinking about logic gates,
+-to build a processor out of gates without thinking too much about transistors and physics!
+Questions:
+-  What does a compiler do?
+-What does mean that a program can run on a x86 or ARM machine?
+-What does it mean that a CPU is slow or quick?
+-What will that program print?
+
+
+
+
+===>Chapter 4 The Process Abstraction Most fundamental abstraction provide to user of an OS: PROCESS
+Def. Process: a running program
+Goal: Run N programs at the same time even though only M CPUs, where N >> M.
+Illusion: each program thinks it has its own isolated machine.
+CPU: (time sharing) A …. | B …. | C … … … | D . | E … | A … |
+OS can do this by virtualizing the CPU (time sharing) -Users can run as many concurrent processes as they like  
+-Potential cost: performance
+-The more processes you run, the less CPU time each process gets
+To implement virtualization of the CPU, it is common to provide: - Mechanisms: Low-level machinery  
+- Implements low-level methods or protocols for some functionality
+- Ex: context switch: OS’s ability to stop one running process and start running another 
+- Policy: High-level intelligence
+- On top of mechanisms we use policies (algorithms) to make decisions
+- Ex: scheduling policy: which program should run next?
+- Typically based on historical information 
+General software design principle that enable modularity: Separation between policy and mechanism.
+The Process Abstraction Machine / CPU state: 
+What can a program read and update when it is running?
+ - the machine’s state is a process’s memory / registers …
+Memory: -  Instructions are in memory
+- Data that the running program reads/writes is in memory
+-Memory of a process is called its address space.
+Registers: -  A process’s machine state include these registers
+- Because many instructions read/update the registers 
+Special Purpose Registers See link and this and this do understand what a stack and frame pointers are - Program Counter (PC)
+- Stack Pointer (SP) 
+-Frame Pointer (FP)
+I/O Information - List of open ﬁles
+Process API General API provide by modern OSes:
+- Create
+-Type command into a shell (or terminal) or double-click an icon
+- Destroy
+- Can kill running process forcefully (CTRL-C, kill <PID>, killall cpu, kill -9 <PID> )
+-Wait
+-Can wait for process to stop 
+-Control
+-Suspend (CTRL-Z)
+-Resume a process (fg — foreground, bg — background)
+- Status
+-Running time of process 
+-What state is it in (ready, waiting, suspended ,…)
+Process creation: 
+- Load into memory
+- Point the PC @ the ﬁrst instruction
+-  Go
+MemoryCPU
+Diskcodestatic dataheapstackProcess
+codestatic dataProgramLoading:Takes on-disk programand reads it into theaddress space of processOS Does:
+-Load code and static data into memory
+-Allocate program’s runtime stack
+-C programs use stack for local variables, function parameters, return addresses
+-Initialize stack with arguments (argc, argv) 
+- Allocate memory for program’s heap
+- Used by program to ask for dynamically allocated data (malloc, free)
+-Used for data structures such as linked lists, hash tables, trees…
+-I/O Initialization
+-Setup default ﬁle descriptors
+-Standard Input / Output / Error (stdin, stdout, stderr)
+-Transfer control of CPU to newly created process
+-Special mechanisms: jumps to the main() function
+Process States Simpliﬁed view of process states:
+-Running:  process is running on a processor, executing instructions
+-Ready: process is ready to run, but OS has chosen not to run itat this given moment
+-Blocked:  process has performed some operation that makes it notready to run until some other event takes place.For example:
+-when a process initiates an I/O request to disk or network, it becomes blocked and thus some other process can use the processor.
+-
+
+
+RunningReadyBlockedDescheduledScheduledI/O: initiateI/O: done
+Data structures OS keep track of
+- Currently running process
+- List of ready to run (runnable) processes (process list)
+- Blocked processes
+Register context: holds the content of a stopped proc’s registers - When proc stopped
+- Save register to this location (to main memory)
+- When proc resume
+- Restore registers from this location (from main memory)
+Summary of Key Process Terms- The process is the major OS abstraction of a running program. At any point in time, the process can be described by its state: the contents of memory in its address space, the contents of CPU registers (including the program counter and stack pointer, among others), and information about I/O (such as open ﬁles which can be read or written). 
+- The process API consists of calls programs can make related to processes. Typically, this includes creation, destruction, and other useful calls. 
+-Processes exist in one of many diﬀerent process states, including running, ready to run, and blocked. Diﬀerent events (e.g., getting scheduled or descheduled, or waiting for an I/O to complete) transition a process from one of these states to the other.
+-A process list contains information about all processes in the system. Each entry is found in what is sometimes called a process control block (PCB), which is really just a structure that contains information about a speciﬁc process.
+Questions:
+-What is the role of scheduler in os?
+-What is process list?
+-What information is contained in the process control block PCB?
+
+
+
+===>Chapter 5 Process API 5.1 The fork() System Call Process creation on Unix: is a bit special.
+Process Identiﬁer (PID) - Used to name the process
+-Is useful if you want to do something with the process, such as stop it or suspend it.
+The fork() creates a new process
+-The strange part: exact copy of the calling process.
+-Looks like two copies of p1, both are about to return from the fork() system call.
+The creating process is called parent The new process is called child.
+-It does not start running at main()
+-Instead it starts its life as if it had called fork() itself. 
+The child (is not an exact copy of the parent); it has its own
+-Copy of the address space (memory)
+-Registers, PC, SP etc.
+The value returned from fork() is diﬀerent for parent and child:
+- Child: 0
+-Parent: gets the PID of the newly created process (child)
+This allows us to determine if we are the child or parent by checking the return value from fork().
+The p1.c program is not deterministic.
+-We don’t know whether the child or the parent runs ﬁrst
+-Child runs ﬁrst, then the parent and vice versa.
+-This non-determinism is due to the scheduler — and we cannot usually make strongassumptions about what it will do.
+5.2 The Wait() system call Sometimes useful to wait for the child to ﬁnish —> use wait().
+The parent process calls wait() to delay its execution until the child ﬁnishes.
+When the child is done, wait() returns to the parent (with the child’s PID as the return code)
+Q: Why will this make the output deterministic?
+A: Yes, The child will always print ﬁrst.
+Why? Two cases:
+1.Child runs and prints ﬁrst
+2.Parent runs ﬁrst, but waits for the child to ﬁnish.
+Only when the child has ﬁnished, will the parent print.
+5.3 Finally, the exec() system call fork() is only useful if you want to run multiple copies of the same program
+This is where exec() is useful.
+The p3.c program runs the wc command using execvp().
+% wc = word count
+% wc -l = line count
+exec() does:
+- Load code and static data from executable ﬁle (wc)
+-Overwrites current code segment and static data of p3
+-Heap and stack re-initialized
+-exec() does not create a new process
+-It transforms the currently running program, which was formerly p3
+-Into a diﬀerent running program, in this case wc.
+- 
+5.4 Why? Motivating the API Why this odd interface for something as simple as creating a process
+- Turns out: separation of fork() and exec() is essential for building a Unix shell
+-Let’s shell code run after the call to fork(), but before the call to exec()
+-This can alter the environment of the “about-to-be-run” program
+-Enables many useful features
+Pipes and Redirection
+Shell: -Shows you a prompt
+-Wait for you to type something into the prompt 
+-Type a command (an executable program with arguments)
+-Shell ﬁgures out where the executable is in the ﬁlesystem
+-./p1
+-PATH is being searched for executable ﬁles when typed at the shell prompt
+-Avoid put the current directory (that is the dot . ) in the PATH because it can cause problems…
+-Calls fork() - to create a child process
+-Calls exec() - to run the command
+-Calls wait() - to wait for the command to ﬁnish
+-When returns the shell prints another prompt  
+Separating fork() and exec() allows redirection…
+% wc p3.c > newﬁle.txt
+Output from wc command is redirected from stdout to newﬁle.txt
+Shell accomplishes this as follows: -When child is created, before calling exec()
+-The shell closes stdout and opens newﬁle.txt
+-Any subsequent output by the child will be transparently rerouted to the newﬁle.txt instead of the screen
+-Avoiding to send the output from wc to stdout — it is only sent newﬁle.txt
+Pipes: pipe() system call -Output of one process is connected to an in-kernel pipe (i.e., queue), and
+-Input of another process is connected to the same pipe. 
+-Can create chains of commands that are strung together:
+% grep ssh *.md | wc -l
+5.5 Process Control and Users -signal() system call: can send signals to process
+- Suspend process: CTRL-Z (Signal: SIGTSTP)
+-Resume process with fg
+-Interrupt signal: (CTRL-C (Signal: SIGINT)
+-Normally terminate the process
+- Can write handler to catch signals, and do special processing, e.g., save application state.
+-Multiuser system: Not everyone can send signals to all processes
+-Only the user owning a process can send signals to it
+-And the admin/super/root user can of course send signals to all processes
+
+HotOS’19: A fork() in the road.
+Abstract:
+The received wisdom suggests that Unix’s unusual combination of fork() and exec() for process creation was an inspired design. In this paper, we argue that fork was a clever hack for machines and programs of the 1970s that has long outlived its usefulness and is now a liability. We catalog the ways in which fork is a terrible abstraction for the modern programmer to use, describe how it compromises OS implementations, and propose alternatives.  As the designers and implementers of operating systems, we should acknowledge that fork’s continued existence as a ﬁrst-class OS primitive holds back systems research, and deprecate it. As educators, we should teach fork as a historical artifact, and not the ﬁrst process creation mechanism students encounter.  The paper instead suggest using posix_spawn():
+man posix_spawn()
+
+
+
+===> Chapter 6 Mechanism: Limited Direct Execution Recall: separate mechanisms and policy…
+-Mechanism: how to virtualize cpu
+-Policies: Schedule
+Virtualize the CPU Simple idea: Time sharing
+-run one process for a little while, then run another process for a little while, and so on…
+Challenges:
+- Performance: How to avoid excessive overhead 
+-Control: How can we run processes eﬃciently while retaining control over the CPU
+-Without control: 
+-A process could run forever — taking over the machine
+-Access Information it shouldn’t be allowed to access
+-Require both OS and hardware support for eﬃciency 
+6.1 Basic Technique: Limited Direct Execution Direct execution: Just run the program directly on the CPU
+Three problems:
+1. What if the proc wants to do something restricted?
+2.What if the OS wants to stop P1 and run P2 instead?
+3.What if running P does something slow, like I/O?
+6.2 Problem #1: Restricted Operations Ex. I/O request, gain access to more resources (CPU/memory)
+Ex. Want a ﬁle system to check permissions before granting access to a ﬁle.
+Hardware support for processor modes (privilege levels)
+-User mode:  restricted (what a process can do)
+-Can’t issue IO requests directly but must go through kernel mode.
+-Kernel mode:  (OS runs in kernel mode)
+-Code can do anything
+-I/O requests
+-Restricted instructions
+Need a way to change between user and kernel mode: to allow user procs to access I/O and other restricted ops:
+-syscall (or trap instruction) 
+Trap instruction:
+-Change privilege level to kernel mode
+-Run “trap handler” (OS code for handling the trap)
+-Save state of the running process
+-OS can then do privileged instruction or I/O op if user is allowed
+Return-from-trap instruction
+-Restore proc state
+-Change privilege level back to user mode 
+Ex. open(), fork(), exec() calls that you use from standard library
+Implemented in the C library as hand-coded assembly following conventions
+- Process arguments and return values correctly
+-Execute trap instruction 
+Saving/Restoring state:
+-Trap: CPU pushes PC, ﬂags, registers onto a per-process kernel stack
+-Return-from-trap: CPU pops these values oﬀ the stack and resume
+Challenge: How does the trap know which code to run inside the OS?
+Trap table is set up at boot time.
+- OS informs the hardware of locations of trap handlers
+-Using a privileged instruction
+-From user mode: trying to change the trap table — you will be killed by the OS
+To call a system call
+-The user code must place the desired system-call number in a register ( or speciﬁed location on the stack)
+-The OS, when handling the system call inside the trap handler
+-Check this number is valid
+-Execute code for the handler
+-Indirection through system-call numbers is protection
+-User code cannot jump into arbitrary location in kernel code
+-Must specify a service via the system call number
+6.3 Problem #2: Switching between Processes Q: How can the OS regain control of the CPU so that it can switch between processes?
+A Cooperative Approach: Wait for System Call -Early versions of MacOS and other OSes
+- OS trusts processes to relinquish CPU periodically
+-So that the OS can run other tasks
+-Turns out: most processes transfer control to the OS
+-Make system calls to open / read ﬁles, send messages…
+-Processes can also call yield() system call
+-Not such a good idea: what can the OS do if a process
+-Is malicious or buggy: (ends up in an) inﬁnite loop without any system calls
+-Only recourse: reboot the machine.
+A Non-Cooperative Approach: The OS Takes Control Q: What can the OS do to ensure a rogue process does not take over the machine?
+Hardware comes to the rescue:
+Timer interrupts -Interrupt the CPU every X ms
+-When interrupted process is halted
+-OS interrupt handler runs (OS regains control and can what it pleases)
+-Save state 
+At boot time (privileged instruction)
+-set interrupt handler and start timer
+The timer interrupt must perform similar actions to save/restore state as for the trap instructions used for explicit system calls.
+Saving and Restoring of Context -Scheduler decide which process to run next (policy: topic of the next few chapters)
+Scheduler decide to switch process:
+-OS low-level mechanism (context switch):
+-Save registers, PC, kernel SP of currently-running process onto its kernel stack
+-Restore registers, PC, and switch to the kernel of the process-to-be-executed next.
+——————————————-
+SYSCALL is an x86-64 assembly language instruction used in modern 64-bit operating systems, including Linux, to perform a system call. It provides a faster and more efﬁcient interface for making system calls compared to the older INT 0x80 mechanism used in 32-bit x86 systems.In the x86-64 architecture, system calls are made using the SYSCALL instruction as follows:•Set Up Registers:•Before invoking the system call, the user-level program sets up the system call number in the RAX register and any required arguments in RDI, RSI, RDX, R10, R8, and R9 registers, following the calling convention.•Execute SYSCALL:•The SYSCALL instruction is then executed, which causes a transition from user mode to kernel mode, and the processor switches to the operating system's privileged execution context.•System Call Handling:•In the kernel, the operating system's system call handler examines the value in the RAX register to determine which system call the user program wants to invoke.•Execute the System Call:•The kernel then performs the requested operation or service on behalf of the user-level program using the provided arguments.•Result Return:•After completing the system call, the result (if any) is stored in the RAX register, which the user program can access upon returning from the system call.•Return to User Mode:•Finally, the operating system executes a special instruction to return from the system call, switching the processor back to user mode, and the user program continues its execution with the result of the system call.The SYSCALL instruction offers several advantages over the older INT 0x80 mechanism, including reduced overhead and improved performance, making it the preferred way to make system calls on 64-bit x86 systems running modern operating systems. However, it's important to note that the speciﬁc register usage and conventions may vary depending on the operating system and calling conventions used by the platform.
+
+
+
+===> Chapter 7 Scheduling: Introduction Separation between mechanism and policy
+Now we talk about policy (higher-level)
+	 Q1: How should we develop a basic framework for thinking about scheduling policies?
+	 Q2: What are the key assumptions?
+	 Q3: What metrics are important?
+	 Q4: What basic approaches that have been used in other system?
+7.1 Workload Assumptions Simplifying assumptions —> collectively called workload
+Knowledge about workload —> more ﬁne-tune policy.
+Workload assumptions are not realistic —> they are just assumptions
+Unrealistic assumptions about the processes (sometimes called jobs):
+1.Each job runs for the same amount of time.
+2.All jobs arrive at the same time
+3.Once started, each job runs to completion.
+4.All jobs only use the CPU (i.e., they perform no I/O)
+5.The run-time of each job is known. (Would make the scheduler omniscient — not going to happen any time soon) 
+7.2 Scheduling Metrics To compare diﬀerent scheduling policies: a scheduling metric
+For now we simplify and use only a single metric.
+Def. Turnaround time: Tturnaround = Tcompletion - Tarrival
+For now, Tarrival = 0.
+Hence, Tturnaround = Tcompletion  
+Turnaround time is a performance metric.
+However, we also care about fairness.
+Often times: performance and fairness are at odds with each other.
+If we optimize performance by preventing some processes from running, we sacriﬁce fairness.
+Conundrum: Sometime we must make tradeoﬀs.
+7.3 First In, First Out (FIFO) Most basic algorithm: or First Come, First Serve (FCFS)
+Ex. Three process A, B, C arrive roughly at the same time (Tarrival = 0).
+Since FIFO has to give an order to the arrival timesAssume A arrive just before B, and B just before C.
+Gantt diagram
+Tturnaround (A) = A ﬁnish @ 10
+Tturnaround (B) = B ﬁnish @ 20
+Tturnaround (C) = C ﬁnish @ 30
+Avg Tturnaround = (10+20+30)/3 = 20 seconds
+Relax assumption 1: jobs may run for diﬀerent amount of time. Q: Can you construct a workload for which FIFO performs poorly?
+Avg Tturnaround = (100+110+120)/3 = 110 seconds
+Painfully slow for B and C.
+This is called the Convoy eﬀect:  
+A number of relatively short potential consumers of the resource get queued behind a heavyweight resource consumer.
+What should we do?
+Example from real-world: Grocery stores commonly have a “ten-items-or-less” lines to ensure that shopperswith only a few things don’t get stuck behind the familypreparing for some upcoming nuclear winter.
+7.4 Shortest Job First (SJF) Very simple: Runs shortest jobs ﬁrst, then the next shortest job and so on…
+See Fig. 7.3. Each to see that this leads to much better performance
+A needs 100 seconds of CPU
+B needs 10 seconds of CPU
+C needs 10 seconds of CPU
+Tturnaround (A) = 120
+Tturnaround (B) = 10
+Tturnaround (C) = 20
+Avg Tturnaround = (10+20+120)/3 = 50 seconds
+Relax assumption 2: Now assume jobs can arrive any time…
+Q: What can happen now? (See Fig 7.4)
+Tarrival (A) = 0
+Tarrival (B) = 10
+Tarrival (C) = 10
+A starts to run, and even though B and C arrive early onthey both have to wait until A has ﬁnished.
+Avg Tturnaround = (100+100+110)/3 = 103.333 seconds
+Tturnaround = Tcompletion - Tarrival
+Tturnaround (A) = 100 - 0 = 100
+Tturnaround (B) = 110 - 10 = 100
+Tturnaround (C) = 120 - 10 = 110
+7.5 Shortest Time-Completion First (STCF) Relax assumption 3: Now assume that jobs can be interrupted by the OS…(they don’t have to run to completion…) Aside: Preemptive schedulers Old days: Batch of jobs run to completion. Used non-preemptive schedulers. 
+Today, virtually all schedulers are preemptive. 
+-OS stops one process and runs another. 
+-Requires timer interrupts and context switch mechanism (Ch 6)
+A preemptive scheduler can preempt job A and decide to runanother job B or C, and continue job A later. STCF or Preemptive Shortest Job First (PSFJ)
+STCF Scheduler: When a new job arrive, ﬁnd the job that hasthe least time left, and schedules that job. A needs 100 seconds of CPU
+B needs 10 seconds of CPU
+C needs 10 seconds of CPU
+Avg Tturnaround = (120+10+20) / 3 = 50 seconds
+Tturnaround = Tcompletion - Tarrival
+Tturnaround (A) = 120 - 0 = 120
+Tturnaround (B) = 20 - 10 = 10
+Tturnaround (C) = 30 - 10 = 20
+7.5 A New Metric: Response Time If we knew job lengths, and that jobs only used the CPU, and our only metric was turnaround time,STCF would be a great policy.
+However, turnaround time is not a good metric for users interacting with a system. They want:
+Def. Response Time: Tresponse = Tﬁrstrun - Tarrival
+The time from when the job ﬁrst arrives in the system until the ﬁrst time it is scheduled to run. Example:
+Tarrival (A) = 0
+Tarrival (B) = 10
+Tarrival (C) = 10
+Response time for each job will be as follows:
+Tresponse (A) =  0 - 0 = 0
+Tresponse (B) =  10 - 10 = 0
+Tresponse (C) =  20 - 10 = 10
+Average Tresponse = (0+0+10) / 3 = 10/3 = 3.33 seconds
+So with STCF the response time is pretty bad. If you are typing on the keyboard, in process C,you have to wait for 10 seconds for your response (to see the characters appear on the screen).
+Q: How can we build a scheduler that is sensitive to response time??
+7.7 Round Robin (time-slicing) RR runs a job for a time slice (also called: scheduling/time quantum)and then switches to the next job in the run queue.
+Quantum must be a multiple of the timer-interrupt, e.g., if the timer interrupts every 10 ms, then the time slice must be either 10, 20, or any other multiple of 10 ms.
+Example: A = B = C = 5 seconds
+Tarrival (A) = 0
+Tarrival (B) = 0
+Tarrival (C) = 0
+Assume a time slice of ts = 1 second.
+Average response time for SJF (Fig 7.6): Tresponse = (0+5+10) / 3 = 5 seconds
+Average response time for RR (Fig 7.7) : Tresponse = (0+1+2) / 3 = 1 seconds
+The length of the time slice is critical for RR.  Shorter: better the performance of RR under the response-time metric.
+Too short (problematic): the cost of context switching will dominate overallperformance.
+Tradeoﬀ for system designer
+Long enough to amortize the cost of switching, but 
+Short enough so that the system is still responsive…
+A note on context switching delay:  OS actions are not only
+-save/restore CPU registers
+As a process runs, build up cache state on the CPU
+-Caches and TLBs, branch predictors and other on-chip hardware
+These caches must be ﬂushed when bringing a new process in.Noticeable performance cost.
+RR is great for response time, but what about turnaround time?
+Example: time slice of ts = 1 second. Fig. 7.7.
+A = B = C need 5 seconds
+Tturnaround = Tcompletion - Tarrival
+Tarrival (A) = 0
+Tarrival (B) = 0
+Tarrival (C) = 0
+A ﬁnish @ 13 sec 
+B ﬁnish @ 14 sec
+C ﬁnish @ 15 sec 
+Avg turnaround time = (13+14+15) / 3 = 42/3 = 14 seconds
+RR is nearly pessimal (close to the worst we can do) w.r.t. turnaround time.We are stretching the jobs out for a long time.
+Two types of schedulers:
+1.SJF/STCF: optimizes turnaround time — at the cost of response time.
+2.RR: optimizes response time — at the cost of turnaround time.
+RR is a fair scheduling policy, while SJF is performant.
+7.8 Incorporating I/O Relax assumption 4: Jobs can also use I/O… When a job requests an IO operation — scheduler knows the job will not usethe CPU during the IO.
+It is blocked waiting for IO completion.(hard disk drives may block for a few ms)
+So scheduler should ﬁnd another job to run on the CPU.
+Example (Fig 7.8 and Fig 7.9):
+A = B = 50 ms CPU time
+A runs 10 ms on the CPU, then wait for IO that takes 10 ms and so on…
+Fig.7.8 where job A is not preempted from CPU.Hence, we can think of this as ﬁve 10 ms sub-jobs of Aand one 50 ms job, B.
+With STCF:Run shorter jobs ﬁrst.Run ﬁrst sub-job of A until completion (until it requests IO)Then run B for 10 ms, until preempted byA’s IO request being completed.And so on…
+7.9 No More Oracle Relax assumption 5: Scheduler does not know the length of each job… OS usually knows very little about the length of each job.
+Cannot predict the future!
+7.10 Summary Two approaches
+-One optimize turnaround time (SJF/STCF)
+-Other optimize response time (RR)
+-Both are bad where the other is good
+-Inherent tradeoﬀ common in systems
+-OS: Can’t see into the future (to determine the length of jobs)
+-Next chapter: Multi-level Feedback Queue
+-Use recent past to predict the future…
+
+
+
+
+===>Chapter 10 Multiprocessor Scheduling 10.1 Background: Multiprocess Architecture Fundamental diﬀerence between
+-Single CPU HW
+-Multi-CPU HW
+Diﬀerence centers around
+-Use of HW caches and
+-How they are shared across multiple CPUs
+What is a cache?
+-Help CPU run programs faster
+-Small, fast memory that hold copies of “popular” data
+-Whose original is in main memory of the system
+-Main memory is slow, large memory, hold all the data
+-Make use of temporal and spatial locality
+Q: What happens when you have multiple processors,with a single shared main memory?
+
+Example: Caching with multiple CPUs
+-Program running on CPU1
+-Read data item (value D) at address A 
+-Not in cache on CPU1
+- Fetch value D from main memory
+-Modify value at A, only updating its cache to D’ 
+-Writing data all the way to main memory is slow; usually done later 
+-OS stops running program: move program to CPU2
+-Read value at A 
+-Not in cache on CPU2 
+-Fetch from main memory 
+-Gets value D instead of the correct value D’ 
+This problem is called: cache coherence
+Solution is provided by the HW.
+10.2 Don’t Forget Synchronize Recall that accessing a shared data structure from multiple threads (possibly on multiple CPUs)
+-Need to add locks
+-Problem:
+-Performance, as the number of CPUs grows 
+-Access to synchronized shared data structures becomes quite slow! 
+10.3 One Final Issue: Cache Aﬃnity Issue:
+-A process, when run on a particular CPU 
+-Builds up state in the caches (TLBs) of the CPU 
+-Hence, it is often advantageous to run the process on the same CPU
+-Will run faster if some of its state is already present in the caches on that CPU
+If process runs on a diﬀerent CPU each time,it will have to reload its state each time it runs.
+This is not a safety issue: It will still be correct due to cache coherence protocols built into the HW.
+Multiprocessor scheduling should consider cache aﬃnity,when making scheduling decisions.
+Try to keep a process on the same CPU if possible. 10.4 Single-Queue Multiprocessor Scheduling (SQMS) Advantage: Simplicity
+Put all jobs into a single queuePolicy: Pick X best jobs/processes to run (if there are X CPUs)
+Disadvantage: Scalability
+To ensure scheduler works correctly on multiple CPUs:
+-Need to use locks to access the single queue 
+-Problem #1: Reduces performance as the number of CPUs grow
+-Content for single lock 
+-System spends time in lock overhead 
+-Less time in doing real work 
+-Problem #2: Cache aﬃnity 
+-Each CPU picks next job from globally-shared queue
+-Job can end up bouncing around from CPU to CPU
+-Doing exactly the opposite of what makes sense from a cache aﬃnity perspective
+Example: Five jobs (A, B, C, D, E). Four CPUs. Scheduling Queue looks this:
+Jobs always switch CPUNo cache aﬃnity advantage will be had.
+To handle this problem:
+-Add aﬃnity mechanism
+-Provide aﬃnity for some jobs 
+-Move around other jobs to balance the load
+Example: 
+-Jobs A-D are not moved
+-Job E migrate between CPUs
+-Preserving aﬃnity for most jobs
+Can also migrate a diﬀerent job next time — for better aﬃnity fairness.
+But this is complex.
+10.5 Multi-Queue Multiprocessor Scheduling (MQMS) Multiple queues, e.g., one per CPU.
+-Each queue follow a scheduling discipline, e.g., RR 
+When job arrive:
+-Add job on exactly one queue 
+-Pick queue, e.g., 
+- Randomly
+- Queue with fewest jobs
+- Or some other heuristic
+-Job scheduled independently 
+-  Avoiding problems of shared data structure needing synchronization
+Example: Two CPUs, Two queues, Four jobs
+With RR, we may get:
+Advantage:
+-Scalable — more CPUs, more queues
+-Lock and cache contention should not become a problem
+-Intrinsically provides cache aﬃnity
+-Reusing cached content on each CPU
+Problem:
+-Load imbalance
+Example: Four jobs, Two CPUs. Then job C ﬁnishes.
+Now we get:
+Next, consider that job A ﬁnishes. CPU 0 is left idle.
+
+Q: How to handle load imbalance?
+A: Obvious answer: move jobs around; technique: migration
+Example: Move one of B or D to CPU 0 (for the last case)
+	 Q0: B -> nil	 	 	 Q1: D -> nil
+Example:
+-First A is alone on CPU0
+-B and D alternate on CPU1
+-Then after some time slices:
+-B is moved to CPU0:
+-CPU0: A and B alternating
+-CPU1: D alone (for some time slices)
+Continuous migration of one or more jobs. Keep switching jobs.
+Q: How should the system decide to enact such migration?
+Work Stealing -A source queue with few jobs:
+-Peek at another target queue
+-If target queue is (notably) more full than source queue 
+-Source queue will steal one or more jobs from the target queue 
+Black art policy:
+-Find right threshold for how often to peek at another queue
+-Tradeoﬀ
+-Too frequent checks: high overhead — hurts scalability 
+-Too infrequent: risk of sever load imbalances
+Go runtime uses a work stealing algorithm to schedule goroutines. 
+
+
+
+===>Chapter 13 The Abstraction: Address Spaces 13.1 Early Systems Only one process in memory at a time.
+Needed to load one program. 
+Run it until ﬁnished.
+And load and run another…
+Problem:
+-Takes a long time to load program into memory (from disk / tape) when switching
+-Especially when size of programs grows large.
+13.2 Multiprogramming and Time Sharing Idea:
+-Leave the non-running process in memory 
+-Let each process have a part of the memory 
+Challenge: Protection
+-Sharing memory of computer with other process
+-Don’t want another process to read or write our process’s memory… (or the OS’s memory)…
+13.3 The Address Space Abstraction:
+Def. The Address Space: The Running Program’s view of the memory.
+Q: What’s the address space?
+Code: Program’s instructions
+- 
+Stack: Keep track of 
+- Where the process is in the function call chain
+-Allocates local variables of functions
+-Pass parameters to functions
+-Return values from functions
+-Return address: where to continue execution after a func call
+Heap: Dynamically allocated memory
+- System call: malloc() in C
+-Java/C++/Go:var j *job.Jobid := j.ID()j := new(job.Job) id := j.ID()j = nilj = j2&cpu.CPU{}  / &job.Job{} 
+Code is static so won’t need more space as it runs… 
+The real program is loaded into an arbitrary physical address (location).
+Q: How can the OS build the address space abstraction?
+-Private for memory for each process
+-Large address spaces (typically 32-bit or 48-bit)
+-For multiple running programs
+-Sharing a single physical memory
+Ex. Process A (Fig 13.2)
+-When process A tries to load address 0x0000 (virtual address)
+-OS and HW: translating virtual address 0x0000 —> physical address 320KB.
+13.4 Goals Major goal of virtual memory (VM) system:
+-Transparency —  the VM system should be invisible to the running program.
+-Invisible: Program shouldn’t be aware that its memory is being virtualized
+-Easy: Program should behave as if it has its own private physical memory
+-Eﬃciency -Time: should not make programs run much slower
+-Space: should not use much memory structures to support virtualization  
+-Protection —  isolation property
+-Protect the processes from each other
+-Protect the OS from processes
+In the following chapters:
+- Mechanisms for virtualizing memory
+-Policies for managing free space 
+-And policies for when to kick stuﬀ out of memory when running low…
+-
+
+
+
+===>Chapter 14 Interlude: Memory API Q: How to allocate and manage memory ?
+- What interfaces are commonly used?
+-What mistakes should be avoided?
+14.1 Types of Memory Stack memory: -Allocations and deallocations managed implicitly by the compiler
+-For you the programmer 
+- Sometimes this is referred to as automatic memory
+Example. Declaring an integer x on the stack:
+int func() {
+	 var x int // in Go
+	 int x; // declare integer on the stack
+	 …
+	 return 0;
+}
+Variables on the stack are lost when func() returns.
+-Not suitable for long-lived memory (data); imageHeap memory: For long-lived memory:
+- Allocations and deallocation explicitly handled by you the programmer.
+-A heavy responsibility!
+-Cause of many many bugs!
+Example. Declaring and allocating an integer on the heap:
+void func() {
+	 int *x = (int *) malloc(sizeof(int));
+	 …
+}
+Note:
+-Compiler: actually makes space on the stack for (int *)
+-malloc() requests space for integer on the heap
+-Returns address of integer (if success, NULL otherwise)
+-The returned address is stored on the stack
+14.2 The malloc() Call malloc(): pass it a size (asking for some room on the heap)
+-Success: gives back pointer to newly allocated space
+-Fail: returns NULL
+To use malloc() we should include <stdlib.h> to let the compiler know — so that it can check that we are calling malloc() correctly.
+malloc(): takes a size as input
+- 
+-Note: sizeof() of a variable, doesn’t return the size of the memory being pointed to:
+int *x = malloc(10 * sizeof(int));
+printf(“%d\n”, sizeof(x));
+First line does what you expect: allocate space for 10 integers.
+However, sizeof(x): only returns the size of an integer, which is 4 or 8 (for 32-bit / 64-bit architectures)
+Another note: malloc() returns a pointer to type void.
+This is C’s way to tell the programmer that she needs to decide what type should be used… and must cast it to the expected type…
+double *d = (double *) malloc(sizeof(double));
+Casting is only a help for the programmer (and the compiler) to keep the code correct…
+Casting doesn’t mean anything for the CPU instructions… 
+14.3 The free() Call Freeing memory is easy!
+Just call free(x), where x is the pointer to the memory allocated by malloc().
+It is also easy to forget to call free().
+14.4 Common Errors Newer languages: Support automatic memory management
+-Allocate memory with new()
+-Free memory with garbage collector: Go and Java and C# 
+-Newer versions of C++ and Rust
+-Support smart pointers
+-Automatically frees memory when pointer goes out of scope.
+fn f() {
+	 let x: ~int = ~1024; 		 // allocate space and initialize an int on the heap
+	 println(fmt!(“%d”, *x));	 // print it on the screen
+} // <— the memory that x pointed at is automatically freed here…
+Common Error #1: Forgetting to Allocate Memory Many functions expect memory to be allocated before you call them.
+Ex. strcpy(dst, src) — copy string from source ptr to a destination ptr.
+#include <string.h>
+char *src = “hello”;char *dst; // unallocatedstrcpy(dst, src);
+Fix:
+#include <stdlib.h>
+char *src = “hello”;char *dst = (char *) malloc(strlen(src) + 1);strcpy(dst, src);
+Better option: strdup()
+Common Error #2: Not Allocating Enough Memory char *src = “hello”;char *dst = (char *) malloc(strlen(src)); // too smallstrcpy(dst, src);printf(“Hey: %s\n”, dst);
+Buﬀer overﬂow!Compiles and runs seemingly without problems…
+Common Error #3: Forgetting to Initialize Allocated Memory char *src = “hello”;char *dst; // forget to initializeprintf(“Hey: %s\n”, dst);
+Without calling strcpy()If lucky: program works with zero valuesOtherwise: some random/harmful thing may happen
+Common Error #4: Forgetting to Free Memory -Memory leak: occur when you forget to free memory
+-Problem in long-running applications/systems including the OS itself
+-Restart required
+-Also a problem in GC-ed languages
+-If you still have a reference/pointer to an object (chunk of memory)
+-The GC won’t free it!!
+OS will clean up allocated memory when a process exists (short-lived)…
+-Good habit to free memory even for short-lived programs
+-What if your code gets converted into a library or long-lived program… (web server)
+Common Error #5: Freeing Memory Before You are done with it! Using the *dst pointer after calling free(dst);Dangling pointer. Bad things can happen! But not always… which is also a problem… because you won’t discover the problem (yet!)
+Common Error #6: Freeing Memory Repeatedly Double free: undeﬁned behavior
+The memory allocation library will typically throw a runtime error.
+Common Error #7: Calling free() incorrectly Pass src to free(src). Also undeﬁned. But bad things could happen.The memory allocation library will typically throw a runtime error.
+
+
+
+
+===>Chapter 15 Mechanism: Address Translation Generic technique: comes in addition to limited direct execution
+(Hardware-based)
+Address translation: -Transform each memory access (instruction fetch, load / store data)
+-Changing virtual address (provided by the instruction or the PC)
+-To a physical address where the information is actually located (in memory) 
+(OS support)
+Manage memory: -Keep track of free/used space
+-Maintain control over how memory is used
+Goal: provide illusion that each process has its own private memory 15.1 (Initial) Assumptions -Address space is placed contiguously in physical memory 
+-| address space | <  | physical memory |
+-For all i, j:  | as( i ) | = | as( j ) | : All address spaces have the same size.15.2 An Example void func() {
+	 int x = 3000;
+	 x = x + 3;
+}Compiler turns this program into assembly:
+128: movl 0x0(%ebx), %eax   // load 0+ebx into eax
+132: add $0x03, %eax            // add 3 to eax register
+135: movl %eax, 0x0(%ebx).   // store eax back to memory
+When executing a program: 
+We need pull instructions (and data) from RAM 
+Into the CPU to be executed…
+When these instructions run,
+The following memory accesses take place:
+-PC: 128
+-Fetch the instruction at 128
+-Execute - load from address 15 KB into eax
+-Fetch instruction at 132
+-Execute - add (no memory references)
+-Fetch instruction at 135 
+-Execute - store to address 15 KB
+Address space range: [0, 16KB]All memory references must be within these bounds.
+Digression into number systems!! Should be covered in a math course
+0x84 0x01 0x00 0x02
+1010 = 1*23 + 0*22 + 1*21 + 0*20 
+         = 8      + 0      + 2     + 0
+         = 10 (base 10) 
+         = A  (base 16)
+Base 16 (Hexadecimal system)
+Replace 10 (base 10) = A (base 16), 11 = B, 12 = C, 13 = D, 14 = E, 15 = F
+1110 0011 = E3 
+1110 = 1*23 + 1*22 + 1*21 + 0*20 = E = 14
+0011 = 0*23 + 0*22 + 1*21 + 1*20 = 3 
+1110 0011= 1*27 + 1*26 + 1*25 + 0*24 + 0*23 + 0*22 + 1*21 + 1*20 
+                 = 128  +   64 +   32  + 0     +  0    +   0   +  2     +  1       = 227 (base 10)  =  E3 (base 16)
+IP address version 4: 152.94.0.1 = 32 bit number = 1001_1000.0101_1110.0000_0000.0000_0001
+E3 (base 16) => 227 (base 10)
+BEEF = B*16^3 + E*16^2 + E*16^1 + F*16^0
+          = 11*4096  + 14*256 + 14*16 + 15*1
+          = 48879
+DEADBEEF (base 16) = 3735928559 (base 10)
+Q: How can we relocate this process in memory (transparent to the process itself)??
+Q: How can we make the virtual address start at 0, when address space is really at some other location?
+Example Fig 15.2. Divide physical memory 64KB into four address spaces each of 16KB.
+15.3 Dynamic Relocation (also called: Base and Bounds)
+Old CPUs had two registers:
+-Base register 
+-Bounds register 
+With these, we can
+- Place address space anywhere in physical memory
+- Ensure process only access its own address space
+Program is written and compiled to be loaded at address 0x0000.When run OS decides:
+-Where in physical memory to load it: X
+-Sets the base register to X
+Example. Fig 15.2 base = 32KB
+When process runs
+-memory references generated by the process (CPU) are translated:
+-Physical Address = Virtual Address + base
+Process (CPU) generating virtual addresses…
+Example. Tracing a single instruction
+128: movl 0x0(%ebx), %eax
+PC is set to 128.
+To fetch this instruction HW computes
+- Physical address = PC + value of base register (32 KB = 32768) = 32768 + 128 = 32896
+Execute move instruction:
+-Processor generates a load from virtual address 15 KB
+-Physical address = 15 KB + 32 KB = 47 KB
+-HW fetches the desired content @ 47 KB into the CPU
+Because this happens at runtime: dynamic relocation
+The Bounds Register Why?: To help with protection 
+CPU will check that a memory reference is within bounds to ensure it is legal.
+If virtual address > bounds OR virtual address < 0 then
+	 Raise an exception (terminate the process)
+Memory Management Unit (MMU): -CPU registers: base and bounds
+-Example Translations Consider an address space with size 4 KB (4096)
+Virtual AddressPhysical Address016 KB (16384)1 KB17 KB300016384 + 3000 = 19384
+4400Fault (out of bounds)15.4 Hardware Support: A Summary 
+Hardware RequirementsNotesPrivileged modePrivileged instructions (kernel mode) to modify base and bounds registers. Can’t let user mode processes change these registers…Base/bounds registersNeed pair of registers per CPU to support address translation and bounds checking…Ability to translate virtual addresses and check if within boundsCircuitry to do translation and check limits; quite simple…Privileged instructions to update base/boundsOS must be able to set these values before letting the user program run…Privileged instructions to register exception handlersOS must be able to tell hardware what code to run if exception occurs… (bounds violation)Ability to raise exceptionsWhen processes try to access privileged instructions or out-of-bounds memory15.5 Operating System Issues OS must:
+-When process is created
+-Find space for the process’s address space in physical memory
+-Search free list (a data structure) for available room for proc’s address space
+-Mark space as used
+-When process is terminated
+-Reclaim all of the process’s memory
+-Put it back on the free list
+-Save and restore (base, bounds)-register pair on context switches (switching between processes)
+-Saved in process control block (PCB) struct
+-Provide exception handlers
+-To terminate oﬀending processes
+With support for base and bounds — it is easy:
+To move a process, when it is stopped. OS simply:
+-Copies the address space from currently location to new location
+-Update the base register (in the PCB) to point the new location
+(the process would be oblivious to this happening …)
+Fig. 15.5 Limited Direct Execution Protocol (w/ Dynamic Relocation)
+
+15.6 Summary Address translation w/base&bounds
+-Fast translation
+-A single add and a single compare operation
+-Transparent to the process
+-Provides protection
+Problems w/base&bounds:
+-if stack and heap space are not big
+-Space between is wasted
+-Called internal fragmentation
+-Caused by the ﬁxed-size slots (due to our assumption of same size address spaces)
+Next chapter: Segmentation
+
+
+
+
+===> Chapter 16 Segmentation Base and bounds is not as ﬂexible as we would like it to be:
+-Requires big chunk of “free” space in the middle
+-Taking up physical memory 
+-Doesn’t look so bad with our small address spaces
+-Imagine a 32-bit address space (4 GB in size)
+-Typical program only use a few megabytes of memory
+16.1 Segmentation: Generalized Base & Bounds Idea: use multiple base/bounds pairs
+- One base/bounds-pair for each logical segment of the address space
+Def. Segment: Contiguous position of address space of a particular length.
+Address space have three logically diﬀerent segments
+-Code
+-Stack
+-Heap
+Example Fig 16.1: Each segment can be placed independently in physical memory.
+
+Example Fig 16.2: 64 KB physical memory  
+Large amounts of unused address space can be accommodated.
+HW: MMU support for segmentation
+-set of three base and bounds register pairs
+
+Example: Translation (refer to Fig 16.1)
+-Instruction fetch from virtual address 100 (code segment)
+-Translate: 100+32 KB (32 KB = 32 *1024) = 32868
+-Heap: consider virtual address 4200 (heap segment)
+-Translate: 4200 - 4096 = 104 + 34 KB = 34920
+16.2 Which Segment are we Referring to? Q: How does the HW know which segment the address is referring to?
+Explicit Approach: -two top bits of the virtual address space — to indicate segment type
+From the Example above: Heap segment with virtual address 4200:
+Segment bits: 01
+Oﬀset bits: 0b0000 0110 1000 = 0x068 = 104 decimal
+“00”Code“01”Heap“10”Stack“11”Unused
+Physical address = oﬀset + base register
+SEG_MASK = 0x3000 (bits 12 and 13: 11)Example:             01 0000 0110 1000AND     11 0000 0000 0000             01 0000 0000 0000SHIFT   00 0000 0000 00 01
+SEG_SHIFT = 12 In order to move the segment bits to the lowest two bits.
+             01 0000 0110 1000AND     00 1111 1111 1111             00 0000 0110 1000
+OFFSET_MASK = 0x0FFF (12 bits for the oﬀset)
+Base and Bounds variables are arrays with one entry per segment.
+Pseudo code on the right can be used to compute the
+Physical address from virtual address…
+Implicit approach -The hardware determine the segment based on how the virtual address was formed…
+-Generated from PC because of an instruction fetch — address is code segment 
+-Generated from SP because the CPU is using it — address is stack segment
+-Any other address — heap segment
+Another digression into binary and (simple) boolean algebra!
+AND TABLE:a b = c0 0 = 00 1 = 01 0 = 01 1 = 1
+Example:x = 0001y = 1101z = 0001
+Bitwise AND: x & y = 0001
+Logical AND: len(array) > 3 && timeSliceExpired = true/false
+OR TABLE: a b = c0 0 = 00 1 = 11 0 = 11 1 = 1
+Example:x = 0001y = 1101z = 1101
+Bitwise OR: a | b = 1101
+Logical OR: len(array) > 3 || timeSliceExpired  = true/falseXOR TABLE: a b = c0 0 = 00 1 = 11 0 = 11 1 = 0
+16.3 What About the Stack? Since the stack grows backwards — need extra bit in hardware to indicate the growing direction of the segment
+Hardware can now translate such virtual address diﬀerently…
+Example. Access virtual address 15KB (stack Fig 16.1).
+15KB = 11 1100 0000 0000 (hex: 0x3C00)
+Two top bits:  11 - stack segment
+OFFSET_MASK: 0x0FFF
+Oﬀset:  0x0C00 = 3KB = 3072
+To ﬁnd the correct negative oﬀset (into the stack segment)
+-Subtract max segment size (4 KB in this example) from 3 KB
+-Negative oﬀset: 3KB - 4KB = -1KB
+-Simply add negative oﬀset to the base: 28KB + (-1KB) = 27 KB (physical address)
+-(Maps to physical address 27KB in Fig 16.2)
+16.4 Support for Sharing Idea: save memory by sharing certain memory segmentsbetween address spaces (=process’s)
+HW: add protection bits
+-A few extra bits per segment
+-Read, Write, and Execute
+Setting code segment to read-only:
+- Multiple processes can share code
+- Without harming isolation
+- Each process still thinks that it is accessing its own private memory
+-While OS is secretly sharing their memory!
+HW: must check if a particular access is permissible  
+Example: if user process tries to 
+-Write to a read-only segment, or
+-Execute from a non-executable segment,
+-HW should raise an exception
+16.6 OS Support Motivation and Context -Unused space between stack and heap need not be allocated in physical memory.
+-Allowing for more address spaces (processes) in physical memory.
+
+Tasks for the OS with segmentation:
+-Q: What should the OS do on a context switch?
+-Segmentation registers must be saved and restored. 
+- Free space management
+- Find space for new processes 
+- A process’s address space has segments of diﬀerent sizes.
+General problem with free space management 
+- Physical memory becomes full of little holes of free space
+- Makes it diﬃcult to 
+- Allocate new segments or
+- Grow existing ones
+- This is called external fragmentation (Fig. 16.6)
+Example Fig. 16.6: A process wish to allocate 20KB segment.
+There is 24KB free, but not in one contiguous segment (rather in three non-contiguous chunks).OS cannot satisfy the 20KB request.
+One solution:  
+-Stop processes one-by-one, move segments, update segment registers to point to new location 
+-Expensive: memory-intensive and use of processor time  
+Simpler/Better approach:
+-Use a free-list management algorithm  
+- Keep large extents of memory available for allocation
+-Ex. Best-ﬁt algorithm — keeps list of free spaces — returns the one closest in size that satisﬁes the desired allocation for a memory allocation request.
+16.7 Summary Segmentation
+-Support sparse address spaces
+-Avoid wasting memory between logical segments of an address space
+-Fast translation with low overhead
+-Code sharing
+Problems with segmentation (variable-sized segments)
+-Free memory gets chopped into odd-sized pieces (external fragmentation)
+-Memory allocation diﬃcult (many smart algorithms exists)
+-But fundamentally hard to avoid external fragmentation
+-Not ﬂexible enough, to support fully generalized sparse address space
+-e.g., if heap is sparsely-used — must keep entire heap in memory …
+
+
+
+===>Chapter 17 Free-Space Management Free-space management becomes diﬃcult 
+-When free space consists of variable-sized units
+-Arises
+-User-level memory-allocation libraries (malloc() and free())
+-OS managing physical memory when using segmentation to implement virtual memory
+-Problem: external fragmentation
+-Not enough contiguous space for allocation request
+Example: Total free space available 20 bytes
+Fragmented into two chunks of size 10 each
+Request: 15 bytes — fails even though there are 20 bytes free
+Q: How to manage free space, when satisfying variable-sized requests?
+Q: What strategies minimize fragmentation?
+Q: What are the time and space overhead of the diﬀerent approaches?
+17.1 Assumptions Basic interface:
+-void * malloc(size)
+-free(void *ptr)
+The memory manager
+-knows the size from the previous allocation
+-Keeps a free list
+(free list refer to a generic data structure to manage free space…)
+-once a memory region is given to a process;
+-Can’t take back the memory that was given to the proc.
+-No compaction of free space is possible
+Focus on external fragmentation
+Can also have internal fragmentation; if a program requests more memorythan what it needs then the “unused” memory goes to waste!
+17.2 Low-level Mechanisms Splitting and Coalescing Def. Free list: set of elements describing free space still in the heap. 
+Example: Free list for this heap:
+-One entry describe the ﬁrst 10-byte free segment (bytes 0-9)
+-One entry for the other free segment (bytes 20-29)
+Req A:  11 bytes: fails!
+Req B:  10 bytes: both free chunks could be used!
+Req C:  1 byte?
+Memory allocator perform action know as splitting: 
+- Find a free chunk that satisﬁes the request and split it into two
+- Return the ﬁrst chunk to the caller (1 byte)
+- Second chunk remain on the free list (9 bytes)
+Free list after splitting could look like this:
+
+Coalescing of free space: Example from the original heap allocation
+Now if user calls free(10)
+Problem:
+-Entire heap is free
+-But divided into three chunks of 10 bytes each 
+-Request for 20 bytes would still fail.
+Solution:  coalesce free space (when a chunk of memory is freed)
+Look at the neighboring chunks and merge them into a single larger free chunk.
+   
+Tracking the Size of Allocated Regions free(void *ptr):
+Q: Given given a pointer, how can the malloc library quicklydetermine the size of the chunk being freed.(and incorporate the space back into the free list)
+To accomplish this task:
+Allocator store extra info in a header block. Header block is also in memory, but just before the “handed-out” chunk of memory…
+Example: Fig 17.1:
+ptr = malloc(20);
+Header contains:
+- Size of allocated region (20 bytes in this case) 
+- Additional pointers to speed up deallocation (freeing)
+- Magic number: integrity checking
+- And other information
+Example (simpliﬁed): Fig. 17.2
+type header struct {
+	 size int
+	 magic int
+}
+When process calls free(ptr):
+Allocator uses simple pointer arithmetic to ﬁnd the header:
+void free(void *ptr) {
+	 header *hptr = (void *) ptr - sizeof(header);
+	 header.size to get the size of the allocated memory
+}
+Note:
+-With a request for N bytes:
+-Allocator actually allocates (N+sizeof(header)) bytes.
+-The overhead is sizeof(header)
+Embedding a Free List Q: How do we keep a free list in the free space itself?
+Example. Managing 4096-byte chunk of heap memory.
+type node_t struct {
+	 size 	 	 int	 	 // 4 bytes
+	 node_t	 *next	 	 // 4 bytes
+}
+Code to create a heap using the mmap() system call:
+node_t *head = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);head->size = 4096 - sizeof(node_t);head->next = NULL;
+After this code, we have a heap with one free chunk.
+Size of heap: 4088 = 4096 - sizeof(node_t)
+Heap ptr at virtual address: 16 KB
+Example: Request for 100 bytes
+-Only one chunk of size 4088
+-So this chunk is chosen
+-Split chunk in two
+-One for the 100 bytes + sizeof(header) = 108
+-Remaining part is the free chunk
+Assuming 8-byte header,the heap now looks like Fig 17.4
+
+Example continues: Two more 100-byte allocations
+Three allocations of 100 bytes or 108 bytes (incl. header)
+Total 324 bytes of heap allocated memoryHead points to 16KB+324
+Q: What happens when a process calls free?
+Example. Calling free(16500);
+-Start of memory region 16384 (16KB)
+-16500 = sptr in Fig 17.5 / 17.6
+-This is the pointer returned by the second callto malloc()
+-16500 - 16384 = 116 = 108 +8
+-108 for the ﬁrst malloc chunk
+-8 bytes header for “this” chunk
+Allocator immediately ﬁnds the size of region to free.(and adds the free chunk back on the free list).
+Now head of list points to the ﬁrst entry (the 100 newly freed bytes)The head node’s next pointer points tothe next free chunk (16708)
+Fig. 17.7 shows all chunks are free —free list is highly fragmented
+Go through the list and merge neighboring chunks!
+To get back to the original heap with one free chunk; Fig. 17.3.
+
+17.3 Basic Strategies Goal: allocator should be fast and minimize fragmentation
+Challenge: allocations and free requests are arbitrary and not predictable
+Best Fit 1.Search free list for free chunks >= requested size
+2.Return the smallest chunk in the candidate set
+Objective: reduce wasted spaceCost: naive implementations pay heavy performance penalty (require exhaustive search: O(N))Drawback: can result in many small chunks (fragmentation)
+Worst Fit 1.Find the largest chunk
+2.Return requested amount
+Objective: leave big chunks free instead of lots of small chunksCost: same as for Best ﬁt.Drawback: studies show it leads to excess fragmentation First Fit 1.Find ﬁrst chunk that is big enough
+2.Returns requested amount
+Objective: FastCost: not exhaustive searchDrawback: pollutes beginning of free list with small objects
+Next Fit Keep extra pointer to the location in the list where one was looking last.Start searching from this location.
+Objective: spread searches uniformly over the listCost: same as for First FitDrawback: need an extra pointer
+
+
+
+
+
+===>Chapter 18 Paging: Introduction Challenging with variable-sized segments
+-Leads to external fragmentation
+-Allocation becomes more diﬃcult over time
+-Requires allocation strategies
+New approach:
+-Chop up space into ﬁxed-sized chunks
+-In virtual memory, this is called paging.
+Instead of variable-sized logical segments for code, heap, stack…
+-Divide virtual address space into ﬁxed-sized units: page.
+-Can view the physical memory as an array of ﬁxed-sized slots: page frames.
+-Each frame can contain a single virtual memory page.
+Q: How can we virtualize memory with pages, and avoid the problems with segmentation?18.1 A simple Example and Overview
+Tiny address space:
+-64 bytes in total
+-Four 16-byte pages 
+-Virtual pages: 0, 1, 2, 3
+Real address spaces:
+-32 bits = 4 GB
+-64 bits = 16 exabytes
+-48 bits = 280 terabytes
+x84-64 / amd64 and ARMv8 only has 48 bits of virtual addresses.
+Example Fig. 18.2:
+-Placement of virtual pages is ﬂexible
+-No assumptions about heap / stack growth
+-Simplicity of free-space management
+- OS simply ﬁnds four free pages
+The OS is responsible for mapping
+-pages from a process’s (virtual) address space to 
+-page frames in physical memory
+-We write: 
+-VP x -> PF y
+-Meaning: Virtual Page x maps to Page Frame y
+In Fig. 18.2 the OS has placed
+-VP 0 -> PF 3
+-VP 1 -> PF 7
+-VP 2 -> PF 5
+-VP 3 -> PF 2
+-Page frames 1, 4, and 6 are currently free!
+Another process would have a diﬀerent mapping.
+-VP 0 -> PF 1 (currently unused)
+-VP 1 -> PF 6 (and so on…)
+Example. Address-translation with our 64-byte address space
+	 movl <virtual address>, %eax
+Load data from <virtual address> into register eax.(ignore the prior instruction fetch).
+Split <virtual address> into two components:
+-Virtual page number (VPN)
+-Oﬀset
+Since our virtual address space is 26 = 64 bytes, we need 6 bits for the virtual address.
+-Page size: 24 = 16  bytes
+-Need four bits for the oﬀset
+-Address space: 64 bytes
+-64/16 = 4 = 26/24 = 22 pages
+-Need two bits for the VPN
+Example. Concrete translation
+	 movl 21, %eax
+When process generates virtual address 21, OS and HW must
+-Translate “21” into VPN + oﬀset
+-21 = 01 0101
+-Virtual page number: 01 = 1
+-Oﬀset: 0101 = 5 
+-(ﬁfth byte in the page)
+-Translate VPN to Physical Frame Number (PFN)
+-Use a Page Table:
+-VPN 1 —> PFN 7 
+-Recall: 0b111 = 7
+Final physical address is 111 0101 (117 decimal)
+Conﬁrm with Fig 18.2:
+Q: Where to store the virtual page to page frame mapping?
+OS keeps a per-process data structure known as a page table.
+Page table store address translations for each virtual page of the address space. 
+18.2 Where are Page Tables Stored? Page tables can get big. Much bigger than a small segment table with base/bounds pairs…
+Example. 32-bit address space, with 4 KB pages (common because size lines up with disk block sizes)
+Virtual address space splits
+-20-bit VPN 
+-12-bit oﬀset (4 KB)  
+Q: How much space is needed to store page tables?
+20-bit VPN — this implies 220 translations (1048576 translations = 1 million)
+-Assume we need 4 bytes per page table entry (PTE)
+-Translation + other useful stuﬀ -4 MB for each page table ; one per process
+-100 processes —> 400 MB of memory just for address translations!!  
+Because page tables are so big: no special on-chip HW.Instead we store page for each process in the memory itself.
+Fig 18.4 shows page table in physical memory.
+18.3 What’s Actually in the Page Table? For now consider a linear page table, or an array that the OS indexes into using the VPN.
+VPN -> PTE
+Page Table Entry bits: -Valid bit: indicate whether or not the translation is valid
+- Is the VPN valid? 
+- Useful to mark all unused space in-between heap and stack as invalid
+- If process tries to access an invalid VPN —> kernel trap —> termination of proc
+-Protection bits: indicate whether the page can be
+-Read from   
+-Write to 
+-Execute from 
+-Violation: kernel trap
+-Present bit: indicate whether page is in physical memory or on disk
+-(more on this later…) allows to run proc with address spaces larger than physical memory…
+-Dirty bit: indicate whether the page has been modiﬁed since it was loaded (into memory)
+-Reference bit: track if a page has been accessed
+-Useful for determining which pages are popular (and should be kept in memory)
+-(important for page replacement)
+18.4 Paging: Too Slow? Consider our example:
+	 movl 21, %eax
+To fetch the data at virtual address 21:
+-System must ﬁrst fetch page table entry from the process’s page table (in memory)
+-Perform the translation: translate virtual address 21 to physical address 117
+-Then load data from physical address 117 (in memory)
+HW must know where the page table is for the currently running proc:
+-Assume a single page-table base register with the physical starting location of the page table
+-To ﬁnd location of PTE, HW must:
+	 VPN	 	 = (VirtualAddress & VPN_MASK) >> SHIFT	 PTEAddr	 = PageTableBaseRegister + (VPN * sizeof(PTE))
+Example. Consider virtual address 21 = 01 0101
+VPN_MASK = 11 0000	 (extract the VPN bits from the virtual address)SHIFT = 4 	 	 	 (number of bits in the oﬀset)sizeof(PTE) = 4 	 	 (size of the page table entry)
+	 01 0101	 (Virtual Address)AND	 11 0000	 (VPN_MASK)	 01 0000>> 4	 00 0001	 (SHIFT >> 4)  = Virtual Page 1
+We then use virtual page 1 as an index into the array of the PTEs (page table).
+	 PTEAddr = PageTableBaseRegister + (1 * 4)
+Knowing the physical address, the HW can fetch the PTE from memory
+	Oﬀset		 = VirtualAddress & OFFSET_MASK	 PhysAddr	 = (PFN << SHIFT) | oﬀset
+OFFSET_MASK = 001111	 	 (extract the oﬀset from the virtual address)
+Compute the PhysAddr by shifting the PFN bits to the location of the VPN and bitwise OR with the oﬀset.
+Example:
+	 	 01 0101	 	 (virtual address)AND	 	 00 1111	 	 (OFFSET_MASK)	 	 00 0101	 	 (Oﬀset)
+	 	 000 0111	 	 (PFN = 7 — obtain by reading the PTE above)<< 4	 	 111 0000	 	 (Physical Address without the oﬀset)OR	 	 000 0101	 	 (Oﬀset)	 	 111 0101	 	 (Physical Address = 117)
+Physical memory address have 7 bits: 27 = 128 addresses.
+Problem:
+Paging requires performing one extra memory reference
+-Fetch translation from page table (in memory)
+-Then fetch actual data from memory 
+Memory references are costly!
+Will slow down processing by a factor of 2x or more…
+18.5 A Memory Trace 
+int array[1000];
+…
+for i := 0; i < 1000; i++ {	 array[i] = 0;}
+Fig 18.7 show how these instructions access memory.
+X-axis show the number of memory accesses per loop (5 ﬁrst iterations)
+-10 memory access per iteration
+-Breakdown: four instruction fetches, one data move, ﬁve page table lookups
+     
+
+
+
+
+===>Chapter 20 Paging: Smaller Tables Problem with paging: various overheads
+-Storage overhead for the page tables
+-Page tables are stored in memory
+-Requires extra memory lookup for each virtual address
+-Going to memory for translation information for everyinstruction fetch and for every load/store instruction
+-Prohibitively slow
+-In chapter 19, we introduced the concept of an address translation cache,or TLB, to solve the latency problem.
+Example. 32-bit address space (232 bytes = 4 GB)
+-4 KB (212 byte) pages 
+-4 byte page-table entry
+One address space has one million virtual pages (232 / 212) = 220.
+Multiply this with the size of the page table entry: 4 x 220 = 4 MB.
+One page table ____
+With 100 active ____
+Q: How can we make page tables smaller?
+-Avoid linear page tables (arrays) — they are too big
+-Key idea: new data structures
+-Challenge: other ineﬃciencies with new data structures
+20.1 Simple Solution: Bigger Pages Example with 32-bit address space again
+But now let’s consider 16 KB pages or 214 bytes.
+--218 = 256k entires 
+Problem with approach:
+- 
+- 
+Another alternative:  
+-  
+-  
+-  
+- 
+20.2 Hybrid Approach: Paging and Segments Def. Hybrid: two (or more) good ideas combined to achieve the best of both worlds.
+Example. Linear page table
+-  
+- 
+- 
+Fig. 20.2 shows that most PTEs are invalid (unused)
+Q: Why not have ____ ?
+-  
+- 
+Use base and bounds, but now:
+-Base points to physical address of the page table for the segment
+-Code, stack, heap
+-Bounds indicate end of page table 
+-How many valid pages it has
+Example. 32-bit Virtual Address Space
+-2 bit segment
+-18 bits for VPN
+-12 bits for oﬀset (4 KB pages)
+-HW: 3 base/bounds pairs of registers
+On context switch:
+- 
+On TLB miss:
+-HW  
+--HW takes
+- 
+- 
+Only diﬀerence from linear page tables:
+- 
+-
+Example. If code segment consumes three pages (0, 1, 2):
+-Page table will have only three entires 
+-Bounds register will be set to 3
+- Memory accesses beyond 3 leads to exception — process termination
+Beneﬁts with hybrid approach:
+- 
+- 
+- 
+Challenges with hybrid approach:
+- 
+--  
+- 
+- 
+20.3 Multi-level Page Tables Tree of linear page tables.Basic idea:
+- Chop Linear Page Table into page-sized units
+- If an entire page of PTEs is invalid — don’t allocate page at all
+-Page directory: data structure to track
+-If a page in PT is valid and 
+-Location in memory if valid
+
+Linear Page Table: 
+-Two middle pages (PFN202 and PFN203) are not used
+-They have no mappings… but they still consume space in the linear PT.
+Multi-level Page Table:
+-Page Directory points to PFNs containing PFNs. 
+-There are no pages in the middle two entries in the PD. Hence not allocated.
+Query Page Directory to ﬁnd out
+-Where a page of the PT is
+-Or the entire page of the PT contains no valid pages
+Page Directory contains Page Directory Entires (PDEs) — similar to PTE.
+Valid bit in the PDE:
+-1 means at least one PTE exists for page
+-0 means none of the PTEs in the PDEs range is valid
+
+Advantages of Multi-level Page Tables -Allocate only PT space for the addresses being used 
+- Compact and supports sparse address spaces
+-Page of PT ﬁts on a page 
+- Easier to manage memory
+- OS: Get next free page to grow the PT
+- (Not possible to grow a linear page table)
+- We add a level of indirection by use of Page Directory.
+- Allow placing PT pages wherever in physical memory
+-On TLB hit, fast, no performance penalty.
+Drawbacks with Multi-level Page Tables -On TLB miss:
+- Two loads from memory required to get translation 
+- One for the PD and one for the PTE itself
+- Linear Page table: just one load from memory
+-Complexity: more involved than simple Linear PT lookup!
+Time-space tradeoﬀ: give some time to save some space
+We make PT lookups more complicated to save space.
+Example. Utilization in Linear Page Table Small AS (16 KB), 64-byte pages
+14-bit virtual AS:
+-8 bits for VPN
+-6 bits for oﬀset
+-Linear PT: 28 = 256 entires
+-VP 0, 1: code
+-VP 4, 5: heap
+-VP 254, 255: stack
+-Rest unused
+Utilization = (2+2+2)/256= 2,3 %
+Example. Build two-level Page Table
+-Linear PT: 256 entires, PTE = 4 bytes
+-PT size = 256*4 bytes = 1 KB
+-Break Linear PT up into page-sized units: 64 bytes
+-1 KB Page Table divided into 16 64-byte pages
+-Each page can hold 64/4 = 16 PTEs
+Page-Directory Index (PDIndex) 
+-256 entries, spread over 16 pages
+-PD: need one entry per page: 16 entires (or 4 bits of the VPN)
+-PDIndex is used to compute address of the PDE
+-PDEAddr = PageDirBase + (PDIndex * sizeof(PDE))
+-Load PDE from the PDEAddr
+-If PDE invalid: raise exception
+-Else PDE valid
+Next: Load PTE from PT pointed to by PDE
+Page-Table Index (PTIndex)
+-Index into PT itself
+-Gives us the address of our PTE
+-PTIndex is the remaining 4 bits of the VPN
+-PTEAddr = (PDE.PFN << SHIFT) + (PTIndex * sizeof(PTE))
+-Note: the PDE’s PFN must be left shifted into placebefore combining with the PTIndex
+
+Example. Multi-level Page Table in Fig. 20.5
+Page Directory (left)
+-Use only two regions of address space
+-(2 of 16 entries)
+-In-between space is unused
+Page Table for PFN 100 (middle)
+-Use four pages (0, 1, 4, 5) of address space
+-(4 of 16 entires)
+-Code pages: 0, 1 ; Heap pages: 4, 5
+Page Table for PFN 101 (right)
+-Use two pages (14, 15) of address space
+-(2 of 16 entries)
+-Stack pages: 254, 255
+Utilization: 2+4+2 / (3*16) = 8 / 48 = 16,7 % (of the three pages)
+But more important metric:We now only use 3 pages instead of 16 pagesfor storing the PT: (16-3) / 16 = 81 % improvement
+Savings for large addresses spaces are much greater!
+Translation example: 
+Virtual address 0x3F80 = 1111_1110_000000
+-PDIndex = 1111 (15 th in Page Directory) —> 101
+-PTIndex = 1110 (14 th entry in Page of PT (@PFN 101)) 
+--> PFN = 55 = 0011_0111
+-Oﬀset = 000000
+-SHIFT = 6 (since oﬀset is 6 bits)
+PhysAddr	 = (PTE.PFN << SHIFT) + Oﬀset
+	 	 = 0011_0111_000000
+	 	 = 0x0DC0
+More than Two Levels For large address spaces, we need deeper multi-level page tables.
+Idea (not completely accurate):
+-Lookup using PD Index 0 (high order bits) to ﬁnd index into second-level PD
+-Combine this index with PD Index 1 to ﬁnd index2 into PT
+-Combine this index2 with PT Index and oﬀset to ﬁnd physical address
+
+The Translation Process (now with TLB) TLB hit: all good, no performance penalty for multi-level page table lookup
+TLB miss: HW must do full multi-level lookup
+-For k-level page table:
+-We get k additional memory accesses versusjust one to get the actual data/instruction we are interested in.
+20.6 Summary Tradeoﬀs:
+-Time vs space: Sacriﬁce time to save space
+-Complexity: Make PT lookups more complicated to save space for PTs
+
+
+
+
+===>Chapter 21 Beyond Physical Memory: Mechanism So far:
+-Assumed address space (AS) ﬁts in physical memory (PM)
+-Relax this assumption; want to:
+-Support many “concurrently-running” large ASes (process)
+-Support virtual ASes that are larger than PM
+Require additional levels in the memory hierarchy 
+-TLB - Address Translation Cache 
+-PM - Physical Memory
+-Disk (swap space)
+To support such large ASes:
+-OS need a place to stash away portions of AS
+-  That are rarely used
+-  This place must have more capacity than PM 
+-  Slower — recall: the faster-lower capacity  vs  slower-more capacity tradeoﬀ
+- Typically: HDD or SSD 
+Q: How can OS use larger, slower devices to      transparently provide the illusion of large virtual ASes?
+Q: Why support a single large AS for each process?
+- Convenience and ease of use
+- Don’t have to worry if there is enough room for you program’s data structures
+21.1 Swap Space Def. Swap Space: Reserved space on disk for memory pages (page-sized units)
+-Swap pages out of memory to disk
+-Swap pages in to memory from disk
+OS must keep:
+-mapping: memory address to disk address
+Example. Tiny AS with 4 PM pages (Fig 21.1)
+-4-page PM
+-8-page swap space (SS)
+-3 processes actively sharing PM
+-Each process only have some of their valid pages in memory
+-Rest are located in SS on disk
+-Proc 3: all its pages on disk
+21.2 The Present Bit Recall:
+-Process generates a virtual memory reference
+-HW translate into physical address — before fetching from memory
+HW translation with TLB:
+-TLB hit: fast — no additional memory access needed — hopefully common case
+-TLB miss (VPN not found in TLB)
+-HW inspect page table in memory (using the Page Table Base Register)
+-Lookup Page Table Entry (PTE)
+-If PTE.valid && PTE.present (present in physical memory)
+-Fetch page from memory
+-Update TLB
+-If not PTE.present
+- Page fault when page is not present in PM
+- Trigger OS page-fault handler
+21.3 The Page Fault (Page Miss) OS call page-fault handler if a page is not present in PM.
+-OS must swap page into memory from disk
+-How OS know where on disk page is? 
+-PT hold such information
+-Use PTE.PFN of page also for disk address(replacing the PFN since it is no longer in PM)
+When IO completes: We have loaded page from disk into PM
+-Update the PT
+-Mark the page as present: PTE.present = true
+-Update the PTE.PFN = new in-memory location of the newly fetched page
+-Retry instruction
+-TLB miss: fetch from PT, update TLB 
+-Retry the instruction again
+-(Because the instruction is only in PM, not in TLB)
+-Last two steps: could be done as part of the page fault handler to avoid this step!
+Before IO completes 
+-Process is blocked (the process is in the Waiting state) 
+-OS free to run some other process
+- Making eﬀective use of the HW (CPU)
+21.4 What if Memory is Full? Memory may be full when bringing in pages.
+OS may need to page out some pages ﬁrst to make room.
+-Picking which page to replace (kick out)
+-Page-replacement policy (next chapter)
+-Wrong decision: can cause program to run 10,000x or 100,000x slower
+21.5 Page Fault Control Flow Line 18-23: are new!
+Find free physical page!
+21.6 When Replacements Really Occur In reality, the OS proactively keeps a small portion of memory free
+Two parameters:
+-High watermark (HW)
+-Low watermark (LW)
+OS runs a background thread: swap daemon (or page daemon)
+-| free pages | < LW
+-Free memory: evict pages from memory (move to disk)
+-Until | free pages | >= HW
+-Swap daemon goes to sleep
+Performing many replacements at once: optimize performance! Background task:
+-Increase eﬃciency
+-Grouping many operations into one (batching)
+21.7 Summary Added present bit in PTE
+Page-fault handler:
+-Transfer page from disk to memory
+-Replace pages to make room for those being swapped in
+This all happens transparently to you as a developer
+-You access your own private, contiguous virtual memory
+-Behind the scenes
+-Pages are placed in arbitrary (non-contiguous) locations
+-Fetched from disk
+-However, in some cases:
+-Single instruction can take many milliseconds to complete (in the worst case)
+
+
+
+
+===> Chapter 22 BeyondPhysical Memory: Policies Memory pressure — when little free memory
+-Forces the OS to start paging out pages
+-Make room for actively-used pages
+-Deciding which pages to evict: replacement policy 22.1 Cache Management We can view main memory (PM) as a cache for VM pages in the system
+Goal of replacement policy: minimize cache misses
+-That is, minimize number of times we fetch a page from disk 
+-Or: vice versa: maximize cache hits 
+Knowing cache hits and misses let us calculate:
+Average memory access time (AMAT):
+	 AMAT 	= TM + (Pmiss * TD)
+	TM 	 = cost of accessing memory
+	TD 	 = cost of accessing disk
+	Pmiss 	 = probability of not ﬁnding the data in cache
+Note: always pay cost of accessing data in memory (TM).
+Example. Assume TM = 100 ns, TD = 10 ms, Pmiss = 10% = 0.1
+	 AMAT = 100 ns + (0.1 * 10 ms) = 100 ns + 1 ms  = 1.0001 ms ≈ 1 ms
+Example. If the hit rate 99.9 %: Pmiss = 0.001
+	 AMAT = 100 ns + 0.001*10 ms = 100 ns + 0.01 ms = 10.1 microseconds
+100x faster: with near 100 % hit rate: AMAT approaches 100 ns22.2 The Optimal Replacement Policy Optimal policy: MIN - fewest misses overall
+-Replace the page that will be accessed furthest in the future
+-Not possible to implement — can’t predict the future
+-Still useful to know what the optimal would for a set of cases
+-Can compare your new replacement policy algorithm with the optimal for certain workloads
+Example. Cache size = 3, #Pages = 4.
+-Stream of virtual page references: 
+-0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1
+Cold start: 
+-Filling the cache — ﬁrst three misses
+Q: Which page to replace/evict to load page 3?
+- 0 used immediately after
+- 3 used again
+-1 used next 
+-2 used next (2 must be evicted since there is no room for it,and it is used furthest into the future)
+Q: Which page to evict to load page 2?
+- 1 used immediately 
+-No more pages used: so can evict page 3 or 0. We chose 3 in this example.
+Hit rate for the cache:
+	 Hit rate = Hits / (Hits+Misses)
+Example. 6 hits, 5 misses:
+	 Hit rate = 6 / (6+5)  = 6/11 = 54.5 %
+Hit rate modulo compulsory misses:
+	 Hit rate = Hits / (Hits+Misses-#Pages)
+Example. There are 4 pages in total. Ignore four misses due to ﬁrst load of each page:
+	 Hit rate = 6 / (6+5-4) = 6/7  = 85.7 %
+22.3 Simple Policy: FIFO -Pages placed in a queue when entering the system
+-Replacement: 
+-Evict page on the tail of the queue (the ﬁrst-in page)
+Which page to evict to load page 3?
+-Easy: page 0 since it was loaded ﬁrst
+Which page to evict for page 0?
+-Easy: page 1 since it was loaded after page 0
+Compare FIFO to optimal policy (MIN):
+	 Hit rate = 4/(4+7) = 4/11 = 36.4 %	 	 	 	 	 	 (54.5 % for MIN)
+	 Hit rate excluding compulsory misses = 4/(4+7-4) = 4/7 = 57.1 %	 	 (85.7 % for MIN)
+
+Aside: Belady’s Anomaly In general: expect cache hit rate to increase (get better) when caches gets larger.
+Example. Memory-reference stream: 1, 2, 3, 4, 1, 2, 5, 1, 3, 4, 5.
+With 3 pages:
+	 Hit rate = 3 / (3+9) = 25 %
+With 4 pages:
+	 Hit rate = 2 / (2+10) = 16.7 %
+FIFO may sometimes get worst with larger cache sizes.Cache Size = 3Cache Size = 4AccessHit/Miss?EvictCache StateAccessHit/Miss?EvictCache State1Miss11Miss12Miss1,22Miss1,23Miss1,2,33Miss1,2,34Miss12,3,44Miss1,2,3,41Miss23,4,11Hit1,2,3,42Miss34,1,22Hit1,2,3,45Miss41,2,55Miss12,3,4,51Hit1,2,51Miss23,4,5,12Hit1,2,52Miss34,5,1,23Miss12,5,33Miss45,1,2,34Miss25,3,44Miss51,2,3,45Hit5,3,45Miss12,3,4,522.5 Using History: LRU Use history as guide:
+-If page access in near past — likely to be accessed again in near future
+-Historical info 
+-Frequency — page access many times (page must have “value”; let’s keep it in cache) 
+-Recency — page was recently accessed
+Family of policies: rely on principle of locality
+-Programs tend to access code/data in sequence, e.g., in a loop  
+-Keep those pages in memory instead of evicting them
+-Heuristic: often very good, but may exhibit random accessthat limit the use of the locality principle!
+Least-Frequently-Used (LFU)
+-Replaces least-frequently used page
+Least-Recently-Used (LRU)
+-Replaces least-recently used page
+Example. LRU Fig 22.5
+	 Hit rate = 6/(6+5) = 6/11 = 54.5 %	 	 (same as MIN)
+22.6 Workload Examples In practice: need to study more complex workloads.
+-ideally: application traces
+Example. Workload without locality -Each reference is a random page (within the set of accessed pages)
+-Workload accessed 100 unique pages
+-10,000 pages accessed overall
+-Varied the cache size: 1 page - 100 pages
+Fig 22.6 shows:
+-When no locality in workload
+- Doesn’t matter much which policy you use
+-All perform the same 
+- When cache is large enough to ﬁt entire workload 
+- Doesn’t matter which policy is used
+- All policies converge to 100 % hit rate
+- Optimal performs much better than any realistic policies 
+-Peeking into the future does a much better job of replacement
+Example. 80-20 Workload
+-Again: 100 unique pages
+-Exhibit locality: 
+- 80 % of references are made to 20 % of the pages (hot pages)
+-Remaining 20 % of references are made to 80 % of the pages (cold pages)
+Fig 22.7 shows:
+-FIFO and random does reasonably well
+- LRU does better: more likely to hold on to hot pages
+- Optimal is quite a bit better than LRU
+- Showing that LRU’s historical info is not perfect!
+
+Example. Looping Sequential Workload
+-50 unique pages in the hot loop 
+-Refer to 50 pages in sequence: 0, 1, 2, … 49 and 
+-Then loop for 10,000 accesses
+-Common in many applications (e.g. databases)
+- Worst-case for LRU and FIFO
+- Kick out older pages
+-But due to the looping nature of the program
+-Those are the “older” pages that will soon be accessed again 
+- Cache size of 49 — with 50 pages in a looping workload:
+-Hit rate of 0 %
+- Random much better for this case, but not as good as optimal
+- Random doesn’t have corner cases
+
+22.7 Implementing Historical Algorithms (FIFO and random are easy to implement)
+Challenge: How do we implement LRU?
+To implement LRU perfectly / accurately:
+- On each page access (instruction fetch or data load/store)
+- Update data structure to move “page” to front of the list
+- Accounting work on every memory reference
+- Great care must be taken: such accounting can greatly reduce performance 
+Could we do this in HW?
+- On each access, update a time ﬁeld in PTE
+- When replacing page, OS scan all time ﬁelds to ﬁnd least-recently-used page
+Prohibitively expensive to scan a large table to ﬁnd the LRU page.
+ 
+22.8 Approximate LRU HW support: use bit (reference bit) in the PTE
+-When page referenced (read or write)
+-HW set use bit to 1.
+-OS is responsible for clearing the use bit to 0. 
+Clock Algorithm:
+-Arrange all pages in a circular list 
+-A “clock hand” points to some page P 
+-When a replacement must occur
+-CheckUseBit:
+-OS checks if P’s use bit is 0 or 1.
+-If use bit == 1: implies that P was recently used
+-(Not a good candidate for replacement)
+-Clear P’s use bit.
+-Advance clock hand to P+1.
+-GOTO CheckUseBit
+-If use bit == 0: implies that P has not recently been used(or we have searched all pages, and all are used)
+-Replace page P.
+Fig shows that the clock algorithm performs quite well compared to perfect LRU
+
+22.9 Considering Dirty Pages
+-If page has been modiﬁed (dirty)
+-Must be written to disk when being evicted (expensive)
+-Else (page is clean)
+-Eviction is free (no need for expensive IO)
+The VM system prefer to evict clean pages over dirty pages
+HW has dirty bit (or modiﬁed bit) in TLB and PT.
+Modiﬁed Clock Algorithm:
+-Scan for pages that are both unused and clean (to evict ﬁrst)
+-Failing to ﬁnd any such pages
+-Evict unused pages that are dirty (taking the cost of IO)
+22.10 Other VM Policies
+Page selection policy: 
+OS must decide when to bring page into memory.
+Two approaches: 
+-Demand paging: 
+-OS brings in a page when it is accessed (on demand)
+-This means that if the page is not present in PM, we will take a page fault and load the page from SS.
+-Prefetching: 
+-If OS already fetching page P, it may be likely that page P+1 will be needed next.
+-Should only be done if there is a reasonable chance of success…
+Policies for writing pages out to disk:
+-One-at-a-time: 
+-Does what you expect, write one page from PM to disk at a time
+-Grouping:  -Grouping multiple writes into one is more eﬀective because of the nature of disk drives (also called batching or clustering)
+22.11 Thrashing Q: What should OS do when memory is oversubscribed?
+Def. Oversubscribed (for the memory case)the memory demands of the set of running processes exceeds the available PM.
+System will constantly be paging: condition is called thrashing
+Def. Working set: set of pages a process is actively using
+Admission control: 
+-Reduce the set of processes that gets to run
+-Hope the remaining processes’s working set ﬁt in memory 
+Linux approach to memory overload:
+Out-of-memory (OOM) killer:
+-Daemon chooses a memory-intensive process and kills it!
+-Problem:
+-If daemon kills the X server — the program that renders stuﬀ on the screen…
+22.12 Summary Modern page replacement algorithms:
+-Try to support LRU approximations (like clock algorithm)
+-Scan-resistant: 
+-Avoid worst-case behavior of LRU, e.g., for the looping-sequential workload
+Importance of page replacement algorithms has decreased
+-Discrepancy between memory-access and disk-access times has increased
+-Cost of frequent paging: prohibitive
+Best solution: buy more memory!
+
+
+
+
+===> Chapter 26 Concurrency: An Introduction So far we have considered 
+-A single physical CPU
+-How to turn single CPU into multiple virtual CPUs (processes)
+-Giving the illusion of multiple programs running at the same time
+Thread: new abstraction for a single process.
+Instead of our view of a single point of execution within a process;
+That is, single Program Counter (PC) where instructions are fetched from.
+Multi-threaded program: more than one point of execution in a single process.
+Multiple PCs, each of which is being fetched from and executed.
+Thread is like a process, except they share the same AS and can access the same data. 
+State of thread (similar to that of process)
+-PC, SP , etc
+-Private registers used for computation
+Switching between threads: context switch
+	 (Similar to switching between processes)
+Process has: one or more thread control blocks (TCBs)
+	 Instead of process control block (PCB)
+Major diﬀerence:
+-Switching between threads vs processes:
+-AS remains the same, so no need to switch PT. 
+Another diﬀerence:
+- Multi-threaded process has multiple stacks (one per thread)
+Example Fig 26.1: Now two stacks
+-Any stack-allocated variables
+-Parameters to functions
+-Return values
+So the AS is no longer “nice”…But usually ok, since stacks generally don’t have to be so large.
+Q: When will small stacks be a problem?
+A: For programs that make heavy use of recursion!!
+-Java used to have large ﬁxed-sized per-thread stacks
+-Go has small initial goroutine (~= thread) stacks that can grow dynamically as needed.
+26.1 Why Use Threads?
+First reason: Parallelism
+Perform operations on very large arrays, e.g.,
+-Increment the value of each element by some amount. 
+-Find word count of array of text
+Can speed up this process by letting multiple CPUs do the work
+Transforming standard single-threaded program to take advantage of multiple CPUsis called parallelization.
+Second reason: Avoid blocking progress due to slow I/O
+Allow other thread to continue when some thread is blocked on I/O.
+-Waiting to send/receive a message
+-Waiting for disk I/O to complete
+Instead of waiting:
+-Another thread can utilize CPU or
+-Issue other I/O requests
+Threading enables overlapping I/O with other activities within a single program. Many server-based applications make use of threads in their implementation
+-Web server
+-Database management systems
+Could use multiple processes instead of threads for these cases
+-But threads share AS and makes it easy to share data between threads 
+-Processes are more suitable for
+-Logically separate tasks 
+-With little sharing of in-memory data structures
+26.2 An Example: Thread Creation Live coding: Fig 26.2 converted to Go; 
+We map: threads => goroutines
+Now:
+-Instead of executing program sequentially
+-Newly created threads run independently of the main thread
+The OS scheduler decides which thread gets to run. 
+We say that a thread may run concurrently with another thread.
+Note that concurrency is not parallelism. 
+
+
+26.3 Why it Gets Worse: Shared Data Example thread execution traces are not sharing any data
+Not a problem if each thread is completely independent — don’t share any data.
+Live coding Fig 26.6 converted to Go.
+26.4 The Heart of the Problem: Uncontrolled Scheduling The instructions to increment the counter variable looks like this:
+	 mov	 0x0849a1c, %eax	 add	 $0x01, %eax	 mov	 %eax, 0x0849a1c
+-Load variable counter from memory address 0x0849a1c into register %eax
+-Add 1 to the register %eax
+-Save register value to counter’s memory location 0x0849a1c
+Example Fig 26.7.
+-T1 runs ﬁrst two instructions; timer interrupt goes oﬀ
+-T2 runs all three instructions
+Since T1 didn’t save the update 51 to memory T2 will also load 50 and update to 51. And when T1 saves its register to memory it too will update to 51.
+Correct version of the program should give the result 52.
+This is called a race condition or a data race.
+-Results depend on the timing execution of the code
+-Can get diﬀerent results each time: indeterminate -We want deterministic computation
+Example of a data race.
+Thread 1Thread 2Memory
+i = 0
+i := 1
+i := 3
+i = 1
+i = 3
+i = 0
+i = 0+1+3Def. Critical Section: a piece of code that accesses (read or write) a shared variable or resourceand must not be concurrently executed by more than one thread.
+A critical section is code that when executed by multiple threads may result in a race condition. What we want:
+Def. Mutual Exclusion: guarantee that if one thread is executing within the critical section,other threads are prevented from doing so! 
+Edsger Dijkstra
+-coined these terms
+-Pioneer in the ﬁeld
+26.5 The Wish for Atomicity
+HW: more powerful instructions to do this as a single step without untimely interrupt
+	 memory-add		 0x8049a1c, $0x01
+HW should guarantee that it executes atomically. Def. Atomically: As as unit (all or none)What we’d like is to execute the three instructions atomically.
+	 mov	 0x0849a1c, %eax	 add	 $0x01, %eax	 mov	 %eax, 0x0849a1c
+Not practical to add atomic update instructions for all instruction types.
+Instead: HW should provide a few useful/general synchronization primitives.
+We use these primitives to ensure multi-threaded code
+-Accesses critical sections in a synchronized and controlled manner
+-Reliably produce correct results
+-Despite challenging nature of concurrent execution
+These are hard problems!
+Summary We can use such primitives to ensure multi-threaded code
+-Accesses critical sections in a synchronized and controlled manner
+-Reliably produce correct results 
+-Despite challenging nature of concurrent execution
+-These are hard problems!
+-Diﬃcult to use synchronization primitives correctly!
+Series of actions that are atomic, means all or nothing. 
+Sometimes called transactions.Def. Transaction: grouping of many actions into a single atomic action.
+
+
+
+
+===>Chapter 27 Thread API Single thread
+-passed a few arguments via myarg_t struct
+-To return values, myret_t struct
+-Main thread is waiting due to the pthread_join()
+-pthread_join() is needed to capture the output from the mythread() function.
+-Once thread ﬁnished running
+-Main thread resumes because pthread_join returns
+-Main thread can now access the returned values in myret_t struct
+To return values from the mythread() function, we had to allocate myret_t in the heap
+If we allocated myret_t on the stack, we would pop the mythread() functions stack frame from the stack,and access the myret_t struct would no longer be valid accesses. As indicated by the compiler warning.
+Not much point in doing what we just did…
+Much easier to do with simple procedure call!
+But it is common that one or more threads wait for all to complete!
+Not all multi-threaded programs use join.
+MT web server:
+-create many worker thread
+-Use main thread to accept network connections
+-Pass them on to worker threads
+-Do this indeﬁnitely 
+Where to use Join:
+-Parallel programs: create threads to execute tasks in parallel, and main thread use join to wait for all to complete before moving on to the next stage in the computation.
+27.3 Locks Functions for providing mutual exclusion to critical sections via locks.
+int pthread_mutux_lock(pthread_mutex_t *mutex);int pthread_mutux_unlock(pthread_mutex_t *mutex);
+Ex.int rc = pthread_mutex_init(&lock, NULL);assert(rc == 0);
+pthread_mutex_lock(&lock);x = x + 1;  // here goes your critical sectionpthread_mutex_unlock(&lock);Intent of this code:- if no other thread holds the lock (when pthread_mutex_lock()) is called	 - the thread will acquire the lock and enter the critical section- otherwise, another thread holds the lock	 - the thread blocks until it has acquired the lock	 - (this means: doesn’t return from pthread_mutex_lock())	 - Implies that the thread holding the lock eventually called unlock()
+Many threads may be stuck waiting inside the lock acquisition functionOnly the thread that acquired the lock should call unlock.
+PS: When done with lock; should call pthread_mutex_destroy().27.4 Condition Variables Condition variables (CV) are useful when threads need to signal certain events to other threads.- .e.g if one thread is waiting for another to do something before it can continue
+int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);int pthread_cond_signal(pthread_cond_t *cond);
+To use a CV function above, must hold a lock associated with this condition.
+cond_wait(): puts calling thread to sleep; waiting for another thread to signal it.(when some condition has changed that it may care about)
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_lock(&lock);while (ready == 0) {	 pthread_cond_wait(&cond, &lock);}// do what ready means for us to do… (Critical section)pthread_mutex_unlock(&lock);
+Check if ready != 0 before we can do something…If ready is still 0, wait (goes to sleep) for other thread to signal (wake it up).
+Other thread:pthread_mutex_lock(&lock);// doing stuﬀready = 1;pthread_cond_signal(&cond);pthread_mutex_unlock(&lock);
+Important: both threads must hold the lock when signaling or waiting.
+Note: the cond_wait() takes both cond and lock as argument.
+This is because wait() calls unlock() to release the lock when going to sleep.
+Otherwise: how could the other thread acquire the lock and signal it to wake up?
+However, before returning after being woken, cond_wait() re-acquires the lock, - this ensures that when it (the thread that waited) is running it has the lock.
+Thread API Guidelines
+-Keep it simple
+-Any code to lock or signal between threads should be as simple as possible
+-Tricky thread interactions lead to subtle bugs (deadlocks)
+-(This applies to channel-based interactions as well — Go)
+-Minimize thread interactions
+-Keep the number of ways in which threads interact to a minimum
+-Each interaction should be carefully though out and constructed with well-known patterns
+-Initialize locks and condition variables (in C)
+-Failure to initialize: sometimes works ﬁne and sometimes fails in strange ways
+-Check return codes:
+-Return codes in C and Unix contain info: should be checked
+-Be careful about how you pass arguments to and return values from threads
+-If pass by reference to a variable allocated on the stack: you are doing it wrong!
+-Each thread has its own stack
+-A thread’s locally allocated variables should be considered private
+-To share data between threads 
+-Allocate space on the heap
+-Or use a global variable
+-Always use condition variables to signal between threads 
+-Don’t use a simple ﬂag!
+-Good alternative to CVs: CSP and channels in Go.
+
+
+
+===>Chapter 28 Locks Introduce lock synchronization primitive to protect critical sections.
+mu = sync.Mutex{}
+mu.Lock()counter = counter + 1 // code in the critical sectionmu.Unlock()
+Declare a lock variable: mutex (mutual exclusion) -Holds the state of the lock at any instant in time
+-Available — unlocked and free
+-No thread holds the lock  
+-Acquired — locked or held
+-Exactly one thread holds the lock 
+-Could also hold other info in the lock/mutex data structure
+-Which thread holds the lock
+-A queue for ordering lock acquisitions 
+Semantics of Lock() and Unlock(): -Lock():
+-The ﬁrst thread will acquire the lock (and can enter the CS)
+-Becomes owner of lock
+-Another thread calling Lock() on the same mutex
+-Will not return (block): thread is waiting
+-While other thread is in the CS
+-Unlock():
+-Owner of mutex calls Unlock() (when leaving the CS) 
+-Lock becomes free
+-If no other threads are waiting for the lock
+-State of lock is set to free
+-Otherwise: there are threads waiting stuck in the Lock() method
+-One of them will acquire the lock (and can enter the CS)
+Lock Granularity -Coarse-grained locking 
+-One “big” lock
+-Covering large/entire data structure
+-Fine-grained locking 
+-Several locks
+-Each lock covering diﬀerent positions of a data structure
+-Beneﬁt: increased concurrency compared to a single “big” lock for all CSs
+Thread API Guidelines (from Chapter 27) -Keep it simple
+-Any code to lock or signal between threads should be as simple as possible
+-Tricky thread interactions lead to subtle bugs (deadlocks)
+-Applies to Go’s channel-based interactions as well
+-Minimize thread interactions
+-Keep the number of ways in which threads interact to a minimum
+-Each interaction should be carefully though out and constructed with well-known patterns
+-Initialize locks and condition variables (in C)
+-Failure to initialize: sometimes works ﬁne and sometimes fails in strange ways
+Thread API Guidelines (continued) -Check return codes:
+-Return codes in C and Unix contain info: should be checked
+-Be careful about how you pass arguments to and return values from threads
+-If pass by reference to a variable allocated on the stack: you are doing it wrong!
+-Each thread has its own stack
+-A thread’s locally allocated variables should be considered private
+-To share data between threads 
+-Allocate space on the heap
+-Or use a global variable
+-Always use condition variables (CVs) to signal between threads 
+-Don’t use a simple ﬂag!
+-Good alternative to CVs: Channels in Go.28.4 Evaluating Locks
+Evaluation criteria
+-Basic task/Correctness: does it provide mutual exclusion?
+-Fairness: does each thread contenting for the lock get a fair shot at acquiring the lock once it is free?
+-Performance: time overheads added by using a lock. Cases to consider: 
+-No contention 
+-Multiple threads contending for the lock on
+-A single CPU
+-Multiple CPUs
+28.5 Controlling Interrupts Early solutions for single CPU systems:
+func Lock() {	 	 	 	 	 func Unlock() {	 DisableInterrupts()	 	 	 	 EnableInterrupts()}	 	 	 	 	 	 }
+HW instruction to turn oﬀ interruptsAnd re-enable interrupts again (unlock)
+Pro/Con:+ Easy to understand that no other thread or the OS can interrupt during the CS-Requires calling thread to perform privileged instruction 
+-Must trust thread / arbitrary program
+-Greedy program: call Lock() at beginning of execution and monopolize the CPU
+-Malicious program: call Lock() and enter inﬁnite loop…
+-Only recourse: restart system
+-Does not work on multiprocessor systems
+-Each CPU has their own interrupts
+-Disabling interrupts for long time: lead to lost interrupts
+-CPU may miss I/O completion event
+-Slow to disable / enable interrupts
+28.6 Lock Implementation Using Loads/Stores Let’s use a single ﬂag variable 
+-Access ﬂag variable via normal memory load/store
+-Will it be suﬃcient?
+If a thread calls lock() when it is being held by another thread,it will spin-wait until the thread calls unlock()
+
+Two problems:
+-Correctness
+-Performance
+Fig. 28.2 Shows an interleaving that both threads get the lock — and can enter the CS.
+This means that we have no mutual exclusion, violating the correctness. Performance: spin-waiting wastes time and CPU cycles waiting for another thread to release the lock
+-On uniprocessor: the thread that the waiter is waiting for can’t even run until a timer interrupt.
+28.7 Spin Locks with Test-and-Set HW support
+-test-and-set instruction
+-Intel x86: xchg instruction
+The TestAndSet() func is performed atomically.
+-Copies and returns the old value
+-Update ptr with a provided new value
+
+This TAS instruction makes it possible to implement a simple spin lock.
+Allows to test the old value (returned) while setting the memory to the new value.
+First case:
+-A thread calls lock() when no other threads hold the lock
+-Flag is 0
+-When thread calls TAS(ﬂag, 1) 
+-TAS returns old value of ﬂag, which is 0 
+-Thread will not spin since TAS(ﬂag, 1) = 0 != 1 
+-TAS will set ﬂag to 1 (atomically) 
+- Indicating that lock is now held
+-On exiting CS and call unlock() 
+- The thread sets ﬂag back to 0.
+
+Second case:
+-A thread calls lock() when another thread hold the lock 
+-Flag is 1
+-When this thread calls TAS(ﬂag, 1) 
+- It returns the old value of ﬂag which is 1
+-Hence the thread enters spin-waiting
+-Repeatedly checking the ﬂag using the TAS instruction 
+-Only when another thread sets the ﬂag to 0 
+- Will “this thread” call TAS() again, and hopefully returning 0.
+- While atomically setting ﬂag to 1, and acquiring the lock and can enter the CS
+Simplest type of lock: Spin Lock
+Simply spins, wasting CPU cycles until lock becomes available.
+To work on a single CPU, it requires a preemptive scheduler
+-Interrupt threads periodically to run OS scheduler and replace threads…
+28.8 Evaluating Spin Locks Correctness: YES!Fairness:
+-Simple spin locks are not fair and may lead to starvation
+- A thread may spin forever under contention
+-Other threads may grab the lock in front of a spinning thread
+Performance:
+-Single CPU case: Overheads can be quite “painful” 
+-Thread holding lock preempted in CS
+-Scheduler runs all other threads
+-Each tries to acquire lock
+-Each thread spin for the duration of a time slice (until giving up)
+-Wasted an entire time slot
+Performance: 
+-Multiple CPUs case:  Can work reasonably well
+- Thread A on CPU 1
+- Thread B on CPU 2
+- A and B contend for the lock
+- If A gets the lock
+- B tries to get the lock, B will spin (on CPU2)
+- Assuming the CS is short
+- Lock quickly becomes available 
+-And gets acquired by B
+Spinning to wait for lock held by another processor can be eﬀective. 28.9 Compare-And-Swap
+Slightly more powerful primitive than Test-And-Set.
+Not needed for mutex locks.
+For lock-free synchronization, we need CAS.
+
+10ptrMemory
+CAS(ptr, expected: 10, new: 20):    actual <— 10    ptr <— 20    return 10CAS(ptr, expected: 10, new: 30):    actual <— 20    return 20CAS(ptr, expected: 20, new: 30):    actual <— 20    ptr <— 30    return 20
+20ptrMemory
+20ptrMemory
+30ptrMemory28.13 A Simple Approach: Just Yield, Baby First attempt:
+-When you are going to spin
+-Instead: give up CPU to another thread
+-Assume OS primitive: yield()
+Recall: Thread state: running, ready, or blocked.
+When a thread calls yield(), it deschedules itself.Moving from running to ready state.
+Example Two threads; A holds the lock; B want to get the lock.Instead of B spinning, B simply yields the CPU, allowing A to run again and ﬁnish its CS.
+Example. 100 threads contenting for a lock, repeatedly.
+One thread acquires the lock — and is preempted before ﬁnishing its CS (and thus not releasing the lock)The other 99 threads call Lock(), ﬁnt that it is held, and yield the CPU.99 threads will run-and-yield before the thread holding the lock gets to run again.Costly context switches (for no good reason).
+28.14 Using Queues: Sleeping Instead of Spinning Exert more control over which thread gets to acquire the lock next
+-OS support
+-Queue to keep track of threads waiting to acquire the lock
+Use two locks
+-A guard lock to protect the lock_t data structure (queue and ﬂag)
+-Lock() and Unlock() must acquire the guard lock
+-Before updating the queue and ﬂag variables
+-The lock itself is the ﬂag variable
+-The guard lock is a spinning lock
+-But the time spent spinning is limitedto the few instructions in the lock() and unlock() code
+-Much better than scenarios where user-deﬁned and arbitrarily long CSs.
+If ﬂag = 0: we get the lock
+Otherwise:
+-Add ourselves to the queue
+-Release the guard lock
+-Park ourselves
+Unlock():
+-Acquire the guard lock
+-If queue empty: release lock
+-Else:
+- Pass lock onto the next thread waiting in queue: Unpark()
+-  When the “unparked” thread is woken up by the scheduler, it will resume after the park(), line 23
+-Release the guard lock
+ 
+
+
+
+===>Chapter 30 Condition Variables Locks are not always enough 
+Sometimes a thread may wish to
+-Check whether a condition is true before continuing its execution
+-Ex: parent thread wants to wait for a child thread before continuing
+-(Without spinning as in the case of a lock)
+Def. Condition Variable:  an explicit queue that threads can put themselves on whensome condition is not satisﬁed, to wait for that condition to become true. Another threadcan change said condition, and then signal (to wake up one or more) waiting threads allowing them to continue. Go doc: sync.Cond implements a condition variable, a rendezvous point for goroutines waiting for orannouncing the occurrence of an event. Go doc:  sync.Cond implements a condition variable, a rendezvous point for goroutines waiting for orannouncing the occurrence of an event.
+func NewCond(mutex Locker) *Condfunc (*Cond) Wait()func (*Cond) Signal()
+Wait():
+-Wait() assumes that the associated mutex is locked when Wait() is called
+-Wait() will atomically:
+-Release the mutex lock, then
+-Put calling goroutine to sleep
+-When goroutine wakes up after being signaled by some other goroutine
+-Must re-acquire mutex lock before resuming after the line of Wait()
+Signal(): Always hold the lock when callingRule: Hold the lock when calling Signal() and Wait(). Example: Implement thread_join using a Condition Variable
+Recall C examples 
+-Chapter 5: Wait for child process to ﬁnish
+-Chapter 26: Thread_join to wait for a thread to ﬁnish
+Two cases:
+1.Parent creates child
+1.Call thread_join()
+1.Get lock
+2.Check condition
+3.Wait for child; parent is put to sleep
+2.Child runs
+1.Print child
+2.Get locks
+3.Set done = 1
+4.Signal to parent (waking it up)
+5.Unlock
+2.Parent creates child; child runs immediately
+1.Call child
+2.Get Lock
+3.Set done = 1
+4.Signal to wake sleeping threads (waiting on condition variable); but there is none
+5.Return from the child()
+6.Parent calls thread_join()
+7.See that done = 1; (in the for loop) — child has already ﬁnished
+8.Does not wait; returns after unlock30.2 The Producer/Consumer Problem (Bounded Buﬀer) Imagine:
+-One or more producer threads
+-Producers generate data items
+-Places them in a buﬀer
+-One or more consumer threads
+-Consumers grab items from the buﬀer
+-Consume them in some way
+Example Web server
+-Producer
+-Puts HTTP requests into work queue
+-Consumer 
+-Threads / workers that take requests out of the queue and process them
+Example: grep foo ﬁle.txt | wc -l
+-Two processes run concurrently 
+-Recall: the diﬀerence between concurrency and parallelism
+-Connected over a Unix pipe (the | symbol, the unix pipe system call)
+-grep is the producer
+-wc is the consumer
+First attempt: Implement using only a single int as buﬀer.
+This buﬀer is shared between a producer and a consumer
+-Use get() and put() functions
+-Count = 1 (mean buﬀer is full)
+-Count = 0 (mean buﬀer is empty)
+Conditions:
+-Only put data into buﬀer when count == 0 (buﬀer is empty)
+-Only get data from the buﬀer when count == 1 (buﬀer is full)
+A Broken Solution (*) Single producer and single consumer
+-First step:
+- Add lock around critical sections (in producer and consumer)
+- Not enough ; we need to add
+- Condition variables
+- Second step:
+- Add a single condition variable:
+- cv and associated mutex lock
+- This works for single P and single C
+- When P wants to ﬁll buﬀer: waits for it become empty: lines p1-p3
+- When C wants empty the buﬀer: waits for it to become full: lines c1-c3
+-(These are diﬀerent conditions)
+What happens if we add another consumer?
+Explaining the steps in table on next page:
+-Turns out that Tc2 gets scheduled before Tc1 even though Tc1 was waiting to consume item
+-Causes Tc1 to panic because the condition is no longer what is expected after the call to wait.Tc1StateTc2StateTpStateCountCommentc1RunningReady Ready 0c2RunningReady Ready 0c3SleepReadyReady 0Nothing to getSleepReadyp1Running0SleepReadyp2Running0SleepReadyp4Running1Buﬀer now fullReadyReadyP5Running1Tc1 wokenReadyReadyp6Running1ReadyReadyp1Running1ReadyReadyp2Running1ReadyReadyp3Sleep1Buﬀer full; sleepReadyc1RunningSleep1Tc2 sneaks in…Readyc2RunningSleep1Readyc4RunningSleep0… and grabs dataReadyc5RunningReady0Tp awokenReadyc6RunningReady0c4RunningReadyReady0Oh no! No data to read!What we saw: if we add more than one consumer, things break…
+Problem illustrated in table above:
+-After Tp woke Tc1 but before Tc1 ran,
+-The state of the bounded buﬀer changed
+-Due to Tc2
+This interpretation of what a signal means is referred to as:
+Mesa Semantics -Signaling a thread only wakes it up
+-Only a hint that the state has changed
+-No guarantee that when woken thread runs, the state will be as desired
+Hoare Semantics -Stronger guarantees; the woken thread will run immediately
+-More diﬃcult to implement this semantics
+-But we can use if-condition
+-All systems: use Mesa semantics
+Always re-check condition when woken up (Mesa semantics)
+-Always use while loop 
+-or in Go a for loop
+-for condition { Wait }
+Problem is that we only have one condition variable 
+-Shared between consumer and producer
+Q: How to ﬁx this?
+-Signaling must be more directed:
+-A consumer should not wake other consumers, only producers.
+-And vice-versa!
+The Single Buﬀer Producer/Consumer Solution Fig 30.12 (see also Go code) shows the solution
+-P waits on condition empty, and signals ﬁll.
+-C waits on ﬁll and signal empty.
+A Consumer can never accidentally wake a Consumer
+A Producer can never accidentally wake a Producer
+The Correct Producer/Consumer Solution with Real Buﬀer Add buﬀer slots
+-Allow multiple values to be “produced” before sleeping
+-Similarly, multiple values can be “consumed” before sleeping
+More eﬃcient
+-Reduces context switches
+-Allows concurrent producing/consuming
+Signaling logic in Fig 30.14
+-P only sleep if all buﬀer slots are ﬁlled (p2)
+-C only sleep if all buﬀer slots are empty (c2)
+-Summary -We have introduced condition variables
+-Wait()
+-Signal() 
+-Signal to waiting goroutines that the condition may have changed
+-Important: waiting goroutine must check condition before resuming: for/while loop
+-Broadcast()
+-Works similar to signal
+-But wakes up all waiting goroutines
+
+
+
+
+===>Chapter 31 Semaphores Single primitive for all things related to synchronization: can replace both
+-Locks and
+-Condition variables 
+Additional use of semaphores:
+-Worker pool
+-Sometimes not desirable to create thousands or millions of goroutines
+-Instead we can limit the number of goroutines that can run at the same time
+-To some reasonable number, e.g., the number of CPU cores
+-Use a pool of “worker” goroutines/threads
+-Schedule work on these “workers"
+Def. Semaphore: An object with an integer value that can be manipulated by
+-sem.Wait() = P()
+-sem.Post() = V()
+Before using a semaphore:
+-Initialize with some value
+-sem := &Semaphore{value: 1}Behavior of semaphore functions:
+func (s *Semaphore) Wait() int {decrements the value of semaphore s by onewait if value of s is negative}func (s *Semaphore) Post() int {increments the value of semaphore s by oneif there are one or more threads waiting, wake one}-Wait():
+- Returns right away if s.value > 1
+- Otherwise, suspends execution, waiting for a subsequent Post() call
+- Multiple calling threads: queued waiting to be woken up
+-Post():
+- Increments s.value
+- If s has waiting threads, wake one up
+Invariant of a semaphore object:
+- s.value < 0  implies that s.value == #waiting threads
+31.2 Binary Semaphore (Locks) Use a semaphore as a lock:
+sem := &Semaphore{value: X}  // initialize semaphore to X
+sem.Wait();	 	 // Lock()
+// critical section
+sem.Post();	 	 // Unlock()
+Q: What should X be?
+X=1
+Case 1: Thread 0 acquires and releases lock without Thread 1 interfering.
+Case 2: Thread 0 holds the lock, when Thread 1 tries to enter critical section
+31.3 Semaphores for Ordering Semaphores can also be used to order events in a concurrent program
+-Usage pattern
+- One thread waiting for something to happen
+- Another thread making that something happen
+- Signaling that it happened
+- Waking the waiting thread
+- Similar to use of condition variables
+Case 1: Parent thread continues to run and reach sem_wait() ﬁrst
+Case 2: Child thread runs ﬁrst reach sem_post() before parent runs sem_wait()
+31.4 The Producer/Consumer Problem (Bounded Buﬀer) First Attempt: Use two semaphores
+-Empty
+-Full
+MAX=1: This works even with multiple producers and multiple consumers
+Next, let’s assume multiple producers and multiple consumers when
+MAX=10
+Q: What can happen if MAX=10?
+A: There is nothing that protects the critical section around get() and put()so multiple threads can enter CS. 
+That is, sem.Wait() only waits when negative, and does not prevent another threadfrom entering the CS. 
+Example: T1 and T2, both calling put() concurrently.
+- Assume T1 runs ﬁrst, and ﬁll buﬀer (ﬁllIndex = 0 on Line F1 in the Go code)
+- T1 descheduled before Line F2
+- T2 runs, and puts its data at the 0th element
+-Overwrite the data just written by T1
+-We have data loss!
+Solution: Add mutual exclusion! -Guard calls to put() and get() with locks (binary semaphore)
+-However, our solution will cause a deadlock… Why?
+Example: Illustrate when our code can deadlock (Fig. 31.11) - C runs ﬁrst
+- Gets lock: mutex.Wait() ; Line c0
+- Calls full.Wait() ; Line c1 — but there is nothing to consume
+- Yield the CPU, but still holds the lock
+- Next, P runs to produce some data 
+- Tries to get lock: mutex.Wait() ; Line p0
+- Lock already held; blocks!
+- Simple cycle:
+- C holds mutex, waiting for someone to signal on the full semaphore
+- P could signal on full semaphore, but is waiting for the mutex.
+- Both C and P are stuck waiting for each other!
+- Classic deadlock!
+31.5 Reader-Writer Locks Distinguish between operations that
+-Read  (often much more frequent)
+-Write
+to a data structure.
+Example: Concurrent list operations:
+- Insert into list — update the list structure (WRITE)
+- Lookup in the list — doesn’t change the list structures (READ)
+Since lookups don’t change the list structure
+-Can have many lookups run concurrently without causing problemssince they are just reading that data
+-Works if we can ensure that no writers run concurrently 
+This is the job of a reader-writer lock.Pseudo-code for ReadWrite Lock:
+func (rw *RWLock) AcquireReadLock() {wait for rw.lock: lock to access internal rwlock data structurereaders++if readers == 1// ﬁrst readerwait for the write lock release the rw.lock}func (rw *RWLock) ReleaseReadLock() {behavior is similar to acquire read lockexcept it releases the write lock when all readers are done}Discussion:
+-First reader to get the writelock, essentially allows any reader to get the readlock too.
+-A writer must thus wait for all readers to ﬁnish!
+Problem with this implementation: Fairness
+-Easy for readers to starve writers 
+A possible ﬁx:
+-Prevent more readers from entering lock once a writer is waiting
+31.6 The Dining Philosophers Intellectually stimulating / interesting:
+-But practical utility is low
+-Included because everyone should know about the problem
+Setup:
+-Five philosophers sitting around a table
+-Single chopstick between each philosopher
+
+The philosophers alternate between
+-Eating: need two chopsticks
+-One on its right and one on its left
+-Thinking: don’t need any chopsticks 
+while true {think()getforks()eat()putforks()}-Write getforks() and putforks()
+Requirements:
+-No deadlock
+-No philosopher starves (never gets to eat)
+-Concurrency is high (as many philosophers can eat at the same time as possible)
+Helper functions:
+int left(int p)  { return p; }int right(int p) { return (p+1) % 5; }Explain:
+-left(): refers to the chopstick to the left of the philosopher p.
+-right(): similar. Modulo operator allow last philosopher p=4 to get its right chopstick, which is 0.
+We will use ﬁve semaphores; one for each chopstick
+func getforks() {sem.Wait(forks[left(p)]);sem.Wait(forks[right(p)]);}func putforks() {sem.Post(forks[left(p)]);sem.Post(forks[right(p)]);}First: pick up the left chopstick and the pick up the right chopstick.
+Deadlock: If each philosopher grab the fork on their left before any philosophercan grab the fork on their right, each will be stuck with one fork, waiting for another, forever.
+p0, f0, p1, f1, p2, f2, p3, f3, p4, f4 … deadlock.
+All forks acquired.
+All philosophers stuck waiting for another fork. 
+A Solution: Breaking the Dependency Make one of the philosophers pick up the chopsticks in a diﬀerent order.
+-Right, then left instead of
+-Left the right.
+Breaks the cycle of waiting.
+void getforks() {if p == 4 {sem.Wait(forks[right(p)]);sem.Wait(forks[left(p)]);} else {sem.Wait(forks[left(p)]);sem.Wait(forks[right(p)]);}}p0, f0, p1, f1, p2, f2, p3, f3, p4, f0 (must wait), p3, f4, … not deadlock
+31.8 Summary Semaphores can be viewed as a generalization of locks and condition variables
+-Turns out building CVs using semaphores is diﬃcult!
+-Yet, some programmers use semaphores exclusively, because of their “simplicity” and utility.
+-Arguably locks are simpler!!
+-Condition variables are still a bit complex!
+-Go channels are often much easier than CVs.
+-Semaphores are useful for work load management!
+
+
+
+
+
+===> Chapter 32 Common Concurrency Problems Now we look at common concurrency bugs:
+-Deadlock-related bugs
+-Non-deadlock bugs
+32.2 Non-Deadlock Bugs Two major types of non-deadlock bugs:
+-Atomicity violation bugs
+-Order violation bugs
+Atomicity violation bugs Example from MySQL 
+Consider this code:
+type Thread struct {procInfo *ProcInfo}Thread 1:if thrd.procInfo != nil {…fputs(thrd.procInfo, …)…}Thread 2:thrd.procInfo = nilQ: What is the problem?
+Thread 1 checks if procInfo != nil and calls fputs()using procInfo, expecting it to be non-nil.
+ 
+Thread 2 may run in-between and set procInfo to nil.
+Formally: The desired serializability (on after the other) among multiplememory accesses is violated.
+Code region is intended to be atomic, but not enforced during execution.
+Solution: Add locks.
+type Thread struct {mutex sync.MutexprocInfo *ProcInfo}Thread 1:mutex.Lock()if thrd.procInfo != nil {…fputs(thrd.procInfo, …)…}mutex.Unlock()Thread 2:mutex.Lock()thrd.procInfo = nilmutex.Unlock()Order-Violation Bugs Implement example in Go.
+Q: What is the problem?Thread 1:  Initialize mThread
+Thread 2:  Use mThread expecting it to already be initialized
+Likely crash with a nil-pointer dereference failure.
+Formally: The desired order between two (groups of) memory accesses is ﬂipped.(A should be executed before B, but the order is not enforced during execution…)
+Solution: The ﬁx is easy with condition variables.
+Summary:A large fraction of non-deadlock bugs areatomicity or order violation bugs. (97 %)
+32.3 Deadlock Bugs Deadlock occurs when both conditions below hold:
+-T1 hold L1, and is waiting for L2
+-T2 hold L2, and is waiting for L1
+
+Example: two locks and two threads
+Implement code snippet below in Go
+Thread 1: Thread 2: Lock(L1)	 	 	 	 Lock(L2)
+Lock(L2)	 	 	 	 Lock(L1)
+Example above does not necessarily lead to deadlock. It can lead to a deadlock.
+Q: What can be done to ﬁx the deadlock?
+A: Take lock in the same order.
+Thread 1: Thread 2: Lock(L1)	 	 	 	 Lock(L1)
+Lock(L2)	 	 	 	 Lock(L2)
+Why do Deadlocks Occur? One reason: In large code bases, complex dependencies arise between components. Care must be taken to avoid deadlock:
+-When we have naturally occurring circular dependencies.
+Encapsulation (modularity) -We are taught to hide details of implementations  
+- To make our software easier to build in a modular way
+- Such modularity does not always mesh well with locking.
+Example modularity: Java Vector class: vec1.AddAll(vec2)
+-Considered thread safe
+-Thread 1: vec1.AddAll(vec2)
+-Thread 2: vec2.AddAll(vec1)
+-Taking the lock for both vec1 and vec2
+-Potential deadlock
+Conditions for Deadlock Four conditions must hold for a deadlock to occur.
+-Mutual Exclusion: Threads claim exclusive control of resources that they require(e.g, a thread grabs a lock)
+-Hold-and-wait: Threads hold resources allocated to them(e.g., locks that they have already acquired)while waiting for additional resources(e.g., locks that they wish to acquire) 
+-No preemption: Resources (e.g., locks) cannot be forcibly removed from threadsthat are holding them.
+-Circular wait: There exists a circular chain of threads such that each thread holds one or more resources (e.g., locks) that are being requested by the next thread in the chain.
+If any of these conditions are not met: deadlock cannot occur.
+Technique: Prevention -Prevent one of the above conditions from arising!! 
+Circular Wait: To avoid circular waiting:
+-Always acquire the locks in a total ordering, e.g., L1, then L2 and so on. 
+Total ordering may be diﬃcult to achieve, especially in large systems with many locks.
+-partial ordering can be useful to avoid deadlocks as well
+Both total and partial ordering require carefully designed locking strategies
+- Ordering is just a convention
+- Slopply programmer can easily ignore locking protocol
+-Can cause deadlock 
+Hold-and-wait:
+Acquire all locks at once atomically:
+	 Lock(prevention)	 Lock(L1)	 Lock(L2)	 …	 // Critical section	 …	 Unlock(prevention)
+Q: What is the problem with this approach?
+-Requires knowing which locks must be held 
+-Decreases concurrency: because must hold locks for locks.
+No Preemption
+Release lock if other thread holds lock we want.
+-TryLock(): grab lock L2 if available.
+-Otherwise: we can release already held lock L1.
+top: L1.Lock()if !L2.TryLock() {L1.Unlock()goto top}- Other thread could follow the same protocol: deadlock free
+Q: What is the problem with this?
+- Other thread could follow same protocol - Deadlock free
+- New problem arise: livelock
+-Two threads could repeatedly attempt this sequence,repeatedly failing to get both locks 
+- No progress is made: hence the name livelock
+- Solution: add random delay before looping back and trying again
+- Could work for the Java vector example
+Mutual Exclusion Can we avoid the need for mutual exclusion at all?
+Herlihy: we can design various data structures without locks at all.
+Lock-free data structures: use powerful HW instructions
+Recall TAS, CompareAndSwap() instruction:
+func CompareAndSwap(address *int, expected, new int) bool {if *address == expected {*address = newreturn true // success}return false // failure}From Go’s sync/atomic package: // CompareAndSwapInt64 executes the compare-and-swap operation for an int64 value. func CompareAndSwapInt64(addr *int64, old, new int64) (swapped bool) Atomic increment with CAS: func AtomicIncrement(value *int, amount int) {old := *valuefor !CompareAndSwap(value, old, old+amount) {old = *value}}Repeatedly tries to update value using CAS instruction.
+-No deadlock can arise
+-Livelock is still possible
+From Go’s sync/atomic package: // AddInt64 atomically adds delta to *addr and returns the new value. func AddInt64(addr *int64, delta int64) (new int64) Linked list insert func (l *List) Insert(key int) {    newNode := &Node{key: key, next: l.head}    l.head = newNode}When called by multiple threads, there is a race condition:
+-Reading head and updating head
+Linked list insert with lock -Already saw that we can use locks
+func (l *List) Insert(key int) {    l.Lock()    defer l.Unlock()    // start of CS    newNode := &Node{key: key, next: l.head}    l.head = newNode    // end of CS}// Can allocate before taking the lockfunc (l *List) Insert(key int) {    newNode := &Node{key: key}    l.Lock()    newNode.next = l.head    l.head = newNode    l.Unlock()}Linked list insert without lock -We can perform insert in a lock-free manner using CAS
+func (l *List) InsertCAS(key int) {    newNode := &Node{key: key}    // start of CS    newNode.next = l.head    for !CAS2(l.head, *newNode.next, *newNode) {        newNode.next = l.head    }    // end of CS}- Tries to update next pointer to the current head
+- Then tries to swap: newly-created node into position as the new head of list
+-If failure:
+- Because some other thread successfully swapped in another node as head
+-Try again
+-Non-trivial to implement some of the other list operations in a lock-free manner.
+Technique: Deadlock Avoidance via Scheduling Avoidance require global knowledge of which locks various threads might grab during an execution.Schedule threads to guarantee no deadlock can occur.Example: Two CPUs. Four threads, two locks.
+Lock acquisition demands:
+	 T1	 T2	 T3	 T4L1	 yes	 yes	 no	 noL2	 yes	 yes	 yes	 no
+These lock demands allow ﬂexible scheduling:
+-T3 does grab L2, but cannot cause deadlock
+-Since T3 only needs one lock, so cannot cause circular waiting
+Lock acquisition demands:
+	 T1	 T2	 T3	 T4L1	 yes	 yes	 yes	 noL2	 yes	 yes	 yes	 no
+Static schedule:
+-Conservative approach:
+-T1, T2, and T3 run on same CPU
+-Takes longer to complete
+-Could have been possible to run these tasks concurrently. 
+-But fear of deadlock prevents us from doing so.
+-Cost: performance.
+Dijkstra’s Banker’s Algorithm is one example deadlock avoidance algorithm.
+However, only useful in very limited environments (embedded systems) where system has full knowledge of
+-The entire set of tasks (processes)
+-The locks that they need
+Deadlock avoidance via scheduling: not widely used technique.
+Technique: Detect and Recover If deadlocks are rare: 
+-Pragmatic approach: restart process/system 
+Deadlock detection:
+-Run periodically  
+-Build resource graph 
+-Check graph for cycles
+-If cycle (deadlock):
+- System/process restart
+32.4 Summary Concurrency and deadlock bugs: 
+-One of the most studied topics in computing
+Best solution in practice:
+-Be careful
+-Develop lock acquisition order
+-Prevent deadlock from occurring in the ﬁrst place
+Wait-free approaches
+-Becoming more mainstream: used in libraries and critical systems
+-Lack generality
+Best approach: avoid locks if you can
+-MapReduce (from Google)
+-Functional programming style
+-No side-eﬀects, no state that is updated
+
+
+
+
+===> Chapter 36 I/O Devices
+How should I/O be integrated into systems?  What are the general mechanisms? How can we make them efficient? 
+1I/O Devices (Chapter 36)36.1 System Architecture (Generic prototype) 
+2
+PCI: Peripheral Component Interconnect SCSI: Small computer System Interface  SATA: Serial Advanced Technology Attachment  USB: Universal Serial Bus I/O Devices (Chapter 36)36.1 System Architecture Intel’s Z270 Chipset 
+3PCIe: Peripheral Component Interconnect Express eSATA: Express Serial Advanced Technology Attachment  USB: Universal Serial Bus 
+I/O Devices (Chapter 36)36.2 A Canonical IO Device 
+4
+Interface: What the device exposes  Internal: Device specific hardware and software I/O Devices (Chapter 36)36.2 A Canonical IO Device 
+5
+Story: •A program p1 wants to send sound to a speaker I/O Devices (Chapter 36)36.2 A Canonical IO Device 
+6
+Story: •A program p1 wants to send sound to a speaker •p1 issues a system call •the system call handler traps in the os •the os calls that procedure that knows how to communicate with the speaker •How to communicate with the devices comes later 36.6/7 I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+7
+I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+8
+What is wrong with this approach ?I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+9
+Polling for Ready (CPU)I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+10
+Writing  (CPU)I/O Devices (Chapter 36)36.3 A Canonical Protocol 
+11
+Polling again  (CPU)I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+12
+Go to sleep and continue laterI/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+13
+Without interrupt busy spinning
+I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+14
+With interrupt another process can use the CPU
+I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+15
+However,  if the device is fast, then no need to go to sleep and wait for interrupt I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+16
+However,  if the device is fast sometimes, spin sometime and then go to sleep I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+17
+Issue,  When many requests (Stream of IO), many interrupts will cause a “livelock” all time goes to processing interrupts I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+18
+Issue,  When many requests (Stream of IO), many interrupts will cause a “livelock” all time goes to processing interrupts I/O Devices (Chapter 36)36.4 Lowering CPU Overhead with Interrupts 
+19
+Trick,  The device waits a while before sending interrupt signal to inform that it is done “coalescing” several “done” into one.  I/O Devices (Chapter 36)36.5 Direct Memory Access (DMA) 
+20
+Problem,  writing large chunk of data is still a CPU task. Must copy the data from memory to the device one word at the time “not good” I/O Devices (Chapter 36)36.5 Direct Memory Access (DMA) 
+21Problem,  writing large chunk of data is still a CPU task. Must copy the data from memory to the device one word at the time “not good” 
+I/O Devices (Chapter 36)36.5 Direct Memory Access (DMA) 
+22Solution,  OS (via a system call) tells DMA where the data is in memory, and how much to copy to which device. The device issues an interrupt when done.   
+I/O Devices (Chapter 36)36.6 Methods of Device Interaction Basically how CPU interacts with devices I/O instructions:  uses dedicated commands to communicate with devices Memory mapped I/O: uses memory operations to communicate with devices  
+23I/O Devices (Chapter 36)36.6 Methods of Device Interaction Basically how CPU interacts with devices Explicit privileged I/O instructions: for example “in” “out” and port (device) Memory mapped I/O: device registers are seen as memory locations. Load (read) or Store (write) to those locations. The hardware routes that to the device and not to memory 24I/O Devices (Chapter 36)36.7 The Device Driver  An abstraction make life easier for the OS, but dealing with the device details 
+25
+I/O Devices (Chapter 36)36.10 Summary  •About how OS interacts with a device •Two techniques for device efficiency: Interrupt and DMA •Interrupt makes sense when device is slow •DMA makes sense for large data chunks copying   •Two techniques for the cpu to access devices: explicit I/O instructions or memory-mapped I/O •Device drivers to make it easier for the os to build os in a device neutral fashion.  26

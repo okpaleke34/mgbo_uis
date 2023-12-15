@@ -1,0 +1,140 @@
+Chapter 7 Scheduling: Introduction Separation between mechanism and policy
+Now we talk about policy (higher-level)
+	 Q1: How should we develop a basic framework for thinking about scheduling policies?
+	 Q2: What are the key assumptions?
+	 Q3: What metrics are important?
+	 Q4: What basic approaches that have been used in other system?
+7.1 Workload Assumptions Simplifying assumptions —> collectively called workload
+Knowledge about workload —> more ﬁne-tune policy.
+Workload assumptions are not realistic —> they are just assumptions
+Unrealistic assumptions about the processes (sometimes called jobs):
+1.Each job runs for the same amount of time.
+2.All jobs arrive at the same time
+3.Once started, each job runs to completion.
+4.All jobs only use the CPU (i.e., they perform no I/O)
+5.The run-time of each job is known. (Would make the scheduler omniscient — not going to happen any time soon) 
+7.2 Scheduling Metrics To compare diﬀerent scheduling policies: a scheduling metric
+For now we simplify and use only a single metric.
+Def. Turnaround time: Tturnaround = Tcompletion - Tarrival
+For now, Tarrival = 0.
+Hence, Tturnaround = Tcompletion  
+Turnaround time is a performance metric.
+However, we also care about fairness.
+Often times: performance and fairness are at odds with each other.
+If we optimize performance by preventing some processes from running, we sacriﬁce fairness.
+Conundrum: Sometime we must make tradeoﬀs.
+7.3 First In, First Out (FIFO) Most basic algorithm: or First Come, First Serve (FCFS)
+Ex. Three process A, B, C arrive roughly at the same time (Tarrival = 0).
+Since FIFO has to give an order to the arrival timesAssume A arrive just before B, and B just before C.
+Gantt diagram
+Tturnaround (A) = A ﬁnish @ 10
+Tturnaround (B) = B ﬁnish @ 20
+Tturnaround (C) = C ﬁnish @ 30
+Avg Tturnaround = (10+20+30)/3 = 20 seconds
+Relax assumption 1: jobs may run for diﬀerent amount of time. Q: Can you construct a workload for which FIFO performs poorly?
+Avg Tturnaround = (100+110+120)/3 = 110 seconds
+Painfully slow for B and C.
+This is called the Convoy eﬀect:  
+A number of relatively short potential consumers of the resource get queued behind a heavyweight resource consumer.
+What should we do?
+Example from real-world: Grocery stores commonly have a “ten-items-or-less” lines to ensure that shopperswith only a few things don’t get stuck behind the familypreparing for some upcoming nuclear winter.
+7.4 Shortest Job First (SJF) Very simple: Runs shortest jobs ﬁrst, then the next shortest job and so on…
+See Fig. 7.3. Each to see that this leads to much better performance
+A needs 100 seconds of CPU
+B needs 10 seconds of CPU
+C needs 10 seconds of CPU
+Tturnaround (A) = 120
+Tturnaround (B) = 10
+Tturnaround (C) = 20
+Avg Tturnaround = (10+20+120)/3 = 50 seconds
+Relax assumption 2: Now assume jobs can arrive any time…
+Q: What can happen now? (See Fig 7.4)
+Tarrival (A) = 0
+Tarrival (B) = 10
+Tarrival (C) = 10
+A starts to run, and even though B and C arrive early onthey both have to wait until A has ﬁnished.
+Avg Tturnaround = (100+100+110)/3 = 103.333 seconds
+Tturnaround = Tcompletion - Tarrival
+Tturnaround (A) = 100 - 0 = 100
+Tturnaround (B) = 110 - 10 = 100
+Tturnaround (C) = 120 - 10 = 110
+7.5 Shortest Time-Completion First (STCF) Relax assumption 3: Now assume that jobs can be interrupted by the OS…(they don’t have to run to completion…) Aside: Preemptive schedulers Old days: Batch of jobs run to completion. Used non-preemptive schedulers. 
+Today, virtually all schedulers are preemptive. 
+-OS stops one process and runs another. 
+-Requires timer interrupts and context switch mechanism (Ch 6)
+A preemptive scheduler can preempt job A and decide to runanother job B or C, and continue job A later. STCF or Preemptive Shortest Job First (PSFJ)
+STCF Scheduler: When a new job arrive, ﬁnd the job that hasthe least time left, and schedules that job. A needs 100 seconds of CPU
+B needs 10 seconds of CPU
+C needs 10 seconds of CPU
+Avg Tturnaround = (120+10+20) / 3 = 50 seconds
+Tturnaround = Tcompletion - Tarrival
+Tturnaround (A) = 120 - 0 = 120
+Tturnaround (B) = 20 - 10 = 10
+Tturnaround (C) = 30 - 10 = 20
+7.5 A New Metric: Response Time If we knew job lengths, and that jobs only used the CPU, and our only metric was turnaround time,STCF would be a great policy.
+However, turnaround time is not a good metric for users interacting with a system. They want:
+Def. Response Time: Tresponse = Tﬁrstrun - Tarrival
+The time from when the job ﬁrst arrives in the system until the ﬁrst time it is scheduled to run. Example:
+Tarrival (A) = 0
+Tarrival (B) = 10
+Tarrival (C) = 10
+Response time for each job will be as follows:
+Tresponse (A) =  0 - 0 = 0
+Tresponse (B) =  10 - 10 = 0
+Tresponse (C) =  20 - 10 = 10
+Average Tresponse = (0+0+10) / 3 = 10/3 = 3.33 seconds
+So with STCF the response time is pretty bad. If you are typing on the keyboard, in process C,you have to wait for 10 seconds for your response (to see the characters appear on the screen).
+Q: How can we build a scheduler that is sensitive to response time??
+7.7 Round Robin (time-slicing) RR runs a job for a time slice (also called: scheduling/time quantum)and then switches to the next job in the run queue.
+Quantum must be a multiple of the timer-interrupt, e.g., if the timer interrupts every 10 ms, then the time slice must be either 10, 20, or any other multiple of 10 ms.
+Example: A = B = C = 5 seconds
+Tarrival (A) = 0
+Tarrival (B) = 0
+Tarrival (C) = 0
+Assume a time slice of ts = 1 second.
+Average response time for SJF (Fig 7.6): Tresponse = (0+5+10) / 3 = 5 seconds
+Average response time for RR (Fig 7.7) : Tresponse = (0+1+2) / 3 = 1 seconds
+The length of the time slice is critical for RR.  Shorter: better the performance of RR under the response-time metric.
+Too short (problematic): the cost of context switching will dominate overallperformance.
+Tradeoﬀ for system designer
+Long enough to amortize the cost of switching, but 
+Short enough so that the system is still responsive…
+A note on context switching delay:  OS actions are not only
+-save/restore CPU registers
+As a process runs, build up cache state on the CPU
+-Caches and TLBs, branch predictors and other on-chip hardware
+These caches must be ﬂushed when bringing a new process in.Noticeable performance cost.
+RR is great for response time, but what about turnaround time?
+Example: time slice of ts = 1 second. Fig. 7.7.
+A = B = C need 5 seconds
+Tturnaround = Tcompletion - Tarrival
+Tarrival (A) = 0
+Tarrival (B) = 0
+Tarrival (C) = 0
+A ﬁnish @ 13 sec 
+B ﬁnish @ 14 sec
+C ﬁnish @ 15 sec 
+Avg turnaround time = (13+14+15) / 3 = 42/3 = 14 seconds
+RR is nearly pessimal (close to the worst we can do) w.r.t. turnaround time.We are stretching the jobs out for a long time.
+Two types of schedulers:
+1.SJF/STCF: optimizes turnaround time — at the cost of response time.
+2.RR: optimizes response time — at the cost of turnaround time.
+RR is a fair scheduling policy, while SJF is performant.
+7.8 Incorporating I/O Relax assumption 4: Jobs can also use I/O… When a job requests an IO operation — scheduler knows the job will not usethe CPU during the IO.
+It is blocked waiting for IO completion.(hard disk drives may block for a few ms)
+So scheduler should ﬁnd another job to run on the CPU.
+Example (Fig 7.8 and Fig 7.9):
+A = B = 50 ms CPU time
+A runs 10 ms on the CPU, then wait for IO that takes 10 ms and so on…
+Fig.7.8 where job A is not preempted from CPU.Hence, we can think of this as ﬁve 10 ms sub-jobs of Aand one 50 ms job, B.
+With STCF:Run shorter jobs ﬁrst.Run ﬁrst sub-job of A until completion (until it requests IO)Then run B for 10 ms, until preempted byA’s IO request being completed.And so on…
+7.9 No More Oracle Relax assumption 5: Scheduler does not know the length of each job… OS usually knows very little about the length of each job.
+Cannot predict the future!
+7.10 Summary Two approaches
+-One optimize turnaround time (SJF/STCF)
+-Other optimize response time (RR)
+-Both are bad where the other is good
+-Inherent tradeoﬀ common in systems
+-OS: Can’t see into the future (to determine the length of jobs)
+-Next chapter: Multi-level Feedback Queue
+-Use recent past to predict the future…
