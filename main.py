@@ -3,13 +3,22 @@ import time
 import pyperclip
 from dotenv import load_dotenv
 import os
+import platform
 from openai import OpenAI
 
 
 # Load variables from .env file
 load_dotenv()
 
-PROG_DIR = os.environ.get('PROG_DIR')
+CRON = True # False
+PROG_DIR = ""
+if platform.system() == "Windows":
+    PROG_DIR = os.environ.get('WINDOWS_PROG_DIR')
+elif platform.system() == "Linux":
+    PROG_DIR = os.environ.get('UNIX_PROG_DIR')
+elif platform.system() == "Darwin":
+    PROG_DIR = os.environ.get('MAC_PROG_DIR')
+
 API_KEY = os.environ.get('API_KEY')
 DB = f"{PROG_DIR}/db.csv"
 def set_clipboard(text):
@@ -128,8 +137,13 @@ if __name__ == "__main__":
             print(e)
         counter += 5
         # Run every minute by cronjob then relooping every 5 seconds for 55 seconds then break to avoid overlapping
+        # But if it is not on cronjob, it will set the counter to 0 so that it will start a new minute that will not affect the changeDef
         if(counter > 50):
-            break
+            if CRON == True:
+                break
+            else:
+                counter = 0
+            
 
         time.sleep(5)
     

@@ -2,12 +2,20 @@ import PyPDF2
 import os
 import os
 from dotenv import load_dotenv
+import platform
 
 
 # Load variables from .env file
 load_dotenv()
 
-PROG_DIR = os.environ.get('PROG_DIR')
+
+PROG_DIR = ""
+if platform.system() == "Windows":
+    PROG_DIR = os.environ.get('WINDOWS_PROG_DIR')
+elif platform.system() == "Linux":
+    PROG_DIR = os.environ.get('UNIX_PROG_DIR')
+elif platform.system() == "Darwin":
+    PROG_DIR = os.environ.get('MAC_PROG_DIR')
 
 def get_all_files(folder_path):
     # List to store the names of all files in the folder

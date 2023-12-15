@@ -1,11 +1,22 @@
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+import platform
+
 
 # Load variables from .env file
 load_dotenv()
 
-PROG_DIR = os.environ.get('PROG_DIR')
+
+PROG_DIR = ""
+if platform.system() == "Windows":
+    PROG_DIR = os.environ.get('WINDOWS_PROG_DIR')
+elif platform.system() == "Linux":
+    PROG_DIR = os.environ.get('UNIX_PROG_DIR')
+elif platform.system() == "Darwin":
+    PROG_DIR = os.environ.get('MAC_PROG_DIR')
+
+print("PROG_DIR: ",PROG_DIR)
 
 def set_file_content(file_path,content):
     with open(file_path, 'w') as f:
